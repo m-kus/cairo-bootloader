@@ -2,7 +2,7 @@ use cairo_vm::types::exec_scope::ExecutionScopes;
 pub use hints::*;
 
 pub mod bootloaders;
-mod hints;
+pub mod hints;
 pub mod tasks;
 
 #[cfg(test)]
