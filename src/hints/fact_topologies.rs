@@ -14,6 +14,8 @@ use serde::Serialize;
 
 use crate::hints::types::{PackedOutput, Task};
 
+use super::types::{CairoPieTask, RunProgramTask};
+
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct FactTopology {
     #[allow(dead_code)]
@@ -364,43 +366,45 @@ fn get_program_task_fact_topology(
 
 pub fn get_task_fact_topology(
     output_size: usize,
-    task: &Task,
+    task: &Box<dyn Task>,
     output_builtin: &mut OutputBuiltinRunner,
     output_runner_data: Option<OutputBuiltinState>,
 ) -> Result<FactTopology, FactTopologyError> {
-    match task {
-        Task::Program(_program) => {
-            let output_runner_data = output_runner_data.ok_or(FactTopologyError::Internal(
-                "Output runner data not set for program task"
+    if let Some(_) = task.as_any().downcast_ref::<RunProgramTask>() {
+        let output_runner_data = output_runner_data.ok_or(FactTopologyError::Internal(
+            "Output runner data not set for program task"
+                .to_string()
+                .into_boxed_str(),
+        ))?;
+        get_program_task_fact_topology(output_size, output_builtin, output_runner_data)
+    } else if let Some(cairo_pie_task) = task.as_any().downcast_ref::<CairoPieTask>() {
+        if output_runner_data.is_some() {
+            return Err(FactTopologyError::Internal(
+                "Output runner data set for Cairo PIE task"
                     .to_string()
                     .into_boxed_str(),
-            ))?;
-            get_program_task_fact_topology(output_size, output_builtin, output_runner_data)
+            ));
         }
-        Task::Pie(cairo_pie) => {
-            if output_runner_data.is_some() {
-                return Err(FactTopologyError::Internal(
-                    "Output runner data set for Cairo PIE task"
-                        .to_string()
-                        .into_boxed_str(),
-                ));
-            }
-            let additional_data = {
-                let additional_data = cairo_pie
-                    .additional_data
-                    .0
-                    .get(&BuiltinName::output)
-                    .ok_or(FactTopologyError::CairoPieHasNoOutputBuiltinData)?;
-                match additional_data {
-                    BuiltinAdditionalData::Output(output_data) => output_data,
-                    _ => {
-                        return Err(FactTopologyError::CairoPieHasNoOutputBuiltinData);
-                    }
+        let additional_data = {
+            let additional_data = cairo_pie_task
+                .cairo_pie
+                .additional_data
+                .0
+                .get(&BuiltinName::output)
+                .ok_or(FactTopologyError::CairoPieHasNoOutputBuiltinData)?;
+            match additional_data {
+                BuiltinAdditionalData::Output(output_data) => output_data,
+                _ => {
+                    return Err(FactTopologyError::CairoPieHasNoOutputBuiltinData);
                 }
-            };
+            }
+        };
 
-            get_fact_topology_from_additional_data(output_size, additional_data)
-        }
+        get_fact_topology_from_additional_data(output_size, additional_data)
+    } else {
+        Err(FactTopologyError::Internal(
+            "Unexpected task type".to_string().into_boxed_str(),
+        ))
     }
 }
 

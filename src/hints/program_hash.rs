@@ -93,7 +93,9 @@ fn maybe_relocatable_to_field_element(
 ///     # The program header below is missing the data length, which is later added to the data_chain.
 ///     program_header = [bootloader_version, program.main, len(program.builtins)] + builtin_list
 ///     data_chain = program_header + program.data
-///  
+///
+///    if use_poseidon:
+///         return poseidon_hash_many(data_chain)
 ///     return compute_hash_chain([len(data_chain)] + data_chain)
 /// ```
 pub fn compute_program_hash_chain(

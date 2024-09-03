@@ -30,8 +30,8 @@ use crate::hints::execute_task_hints::{
 use crate::hints::inner_select_builtins::select_builtin;
 use crate::hints::select_builtins::select_builtins_enter_scope;
 use crate::hints::simple_bootloader_hints::{
-    divide_num_by_2, prepare_task_range_checks, set_ap_to_zero, set_current_task,
-    set_tasks_variable,
+    divide_num_by_2, prepare_task_range_checks, set_ap_to_zero, set_ap_to_zero_or_one,
+    set_current_task, set_tasks_variable,
 };
 
 /// A hint processor that can only execute the hints defined in this library.
@@ -103,12 +103,20 @@ impl HintProcessorLogic for MinimalBootloaderHintProcessor {
             SIMPLE_BOOTLOADER_SET_CURRENT_TASK => {
                 set_current_task(vm, exec_scopes, ids_data, ap_tracking)
             }
-            SIMPLE_BOOTLOADER_ZERO => set_ap_to_zero(vm),
+            SIMPLE_BOOTLOADER_ZERO_V0_13_0 => set_ap_to_zero(vm),
+            SIMPLE_BOOTLOADER_ZERO_V0_13_1 => {
+                set_ap_to_zero_or_one(vm, exec_scopes, ids_data, ap_tracking)
+            }
             EXECUTE_TASK_ALLOCATE_PROGRAM_DATA_SEGMENT => {
                 allocate_program_data_segment(vm, exec_scopes, ids_data, ap_tracking)
             }
             EXECUTE_TASK_LOAD_PROGRAM => load_program_hint(vm, exec_scopes, ids_data, ap_tracking),
-            EXECUTE_TASK_VALIDATE_HASH => validate_hash(vm, exec_scopes, ids_data, ap_tracking),
+            EXECUTE_TASK_VALIDATE_HASH_V0_13_0 => {
+                validate_hash(vm, exec_scopes, ids_data, ap_tracking)
+            }
+            EXECUTE_TASK_VALIDATE_HASH_V0_13_1 => {
+                validate_hash(vm, exec_scopes, ids_data, ap_tracking)
+            }
             EXECUTE_TASK_ASSERT_PROGRAM_ADDRESS => {
                 assert_program_address(vm, exec_scopes, ids_data, ap_tracking)
             }

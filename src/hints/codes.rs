@@ -114,8 +114,12 @@ pub const SIMPLE_BOOTLOADER_SET_CURRENT_TASK: &str =
 task_id = len(simple_bootloader_input.tasks) - ids.n_tasks
 task = simple_bootloader_input.tasks[task_id].load_task()";
 
-// Appears as nondet %{ 0 %} in the code.
-pub const SIMPLE_BOOTLOADER_ZERO: &str = "memory[ap] = to_felt_or_relocatable(0)";
+// Appears as nondet %{ 0 %} in the code. (bootloader v0.13.0)
+pub const SIMPLE_BOOTLOADER_ZERO_V0_13_0: &str = "memory[ap] = to_felt_or_relocatable(0)";
+
+// Appears as nondet %{ memory[ap] = to_felt_or_relocatable(1 if task.use_poseidon else 0) %} in the code (bootloader v0.13.1)
+pub const SIMPLE_BOOTLOADER_ZERO_V0_13_1: &str =
+    "memory[ap] = to_felt_or_relocatable(1 if task.use_poseidon else 0)";
 
 pub const EXECUTE_TASK_ALLOCATE_PROGRAM_DATA_SEGMENT: &str =
     "ids.program_data_ptr = program_data_base = segments.add()";
@@ -129,12 +133,18 @@ program_address, program_data_size = load_program(
     builtins_offset=ids.ProgramHeader.builtin_list)
 segments.finalize(program_data_base.segment_index, program_data_size)";
 
-pub const EXECUTE_TASK_VALIDATE_HASH: &str = "# Validate hash.
+pub const EXECUTE_TASK_VALIDATE_HASH_V0_13_0: &str = "# Validate hash.
 from starkware.cairo.bootloaders.hash_program import compute_program_hash_chain
 
 assert memory[ids.output_ptr + 1] == compute_program_hash_chain(task.get_program()), \\
   'Computed hash does not match input.'";
 
+pub const EXECUTE_TASK_VALIDATE_HASH_V0_13_1: &str = "# Validate hash.
+from starkware.cairo.bootloaders.hash_program import compute_program_hash_chain
+
+assert memory[ids.output_ptr + 1] == compute_program_hash_chain(
+    program=task.get_program(),
+    use_poseidon=bool(ids.use_poseidon)), 'Computed hash does not match input.'";
 pub const EXECUTE_TASK_ASSERT_PROGRAM_ADDRESS: &str = "# Sanity check.
 assert ids.program_address == program_address";
 

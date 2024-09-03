@@ -1,10 +1,11 @@
+use std::any::Any;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
 use cairo_vm::serde::deserialize_program::Identifier;
 use cairo_vm::types::errors::program_errors::ProgramError;
 use cairo_vm::types::program::Program;
-use cairo_vm::vm::runners::cairo_pie::{CairoPie, StrippedProgram};
+use cairo_vm::vm::runners::cairo_pie::CairoPie;
 use cairo_vm::Felt252;
 use serde::Deserialize;
 
@@ -36,32 +37,95 @@ pub enum PackedOutput {
     Composite(CompositePackedOutput),
 }
 
-#[derive(Debug, Clone, PartialEq)]
-#[allow(clippy::large_enum_variant)]
-pub enum Task {
-    Program(Program),
-    Pie(CairoPie),
+pub trait Task {
+    fn get_program(&self) -> Result<Program, ProgramError>;
+    fn as_any(&self) -> &dyn Any;
 }
 
-impl Task {
-    pub fn get_program(&self) -> Result<StrippedProgram, ProgramError> {
-        // TODO: consider whether declaring a struct similar to StrippedProgram
-        //       but that uses a reference to data to avoid copying is worth the effort.
+#[derive(Debug, Clone, PartialEq)]
+pub enum TaskSpec {
+    RunProgram(RunProgramTask),
+    CairoPiePath(CairoPiePath),
+    CairoPieTask(CairoPieTask),
+}
+
+impl TaskSpec {
+    pub fn load_task(&self) -> Result<Box<dyn Task>, std::io::Error> {
         match self {
-            Task::Program(program) => program.get_stripped_program(),
-            Task::Pie(cairo_pie) => Ok(cairo_pie.metadata.program.clone()),
+            TaskSpec::RunProgram(task) => Ok(Box::new(task.clone())),
+            TaskSpec::CairoPiePath(path) => {
+                let cairo_pie = CairoPie::read_zip_file(&path.path)?;
+                Ok(Box::new(CairoPieTask {
+                    cairo_pie,
+                    use_poseidon: path.use_poseidon,
+                }))
+            }
+            TaskSpec::CairoPieTask(task) => Ok(Box::new(task.clone())),
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct TaskSpec {
-    pub task: Task,
+pub struct RunProgramTask {
+    pub program: Program,
+    pub program_input: HashMap<String, serde_json::Value>,
+    pub use_poseidon: bool,
 }
 
-impl TaskSpec {
-    pub fn load_task(&self) -> &Task {
-        &self.task
+impl Task for RunProgramTask {
+    fn get_program(&self) -> Result<Program, ProgramError> {
+        Ok(self.program.clone())
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+impl RunProgramTask {
+    pub fn new(
+        program: Program,
+        program_input: HashMap<String, serde_json::Value>,
+        use_poseidon: bool,
+    ) -> Self {
+        Self {
+            program,
+            program_input,
+            use_poseidon,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct CairoPiePath {
+    pub path: PathBuf,
+    pub use_poseidon: bool,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct CairoPieTask {
+    pub cairo_pie: CairoPie,
+    pub use_poseidon: bool,
+}
+
+impl Task for CairoPieTask {
+    fn get_program(&self) -> Result<Program, ProgramError> {
+        Ok(Program::from_stripped_program(
+            &self.cairo_pie.metadata.program,
+        ))
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+impl CairoPieTask {
+    pub fn new(cairo_pie: CairoPie, use_poseidon: bool) -> Self {
+        Self {
+            cairo_pie,
+            use_poseidon,
+        }
     }
 }
 

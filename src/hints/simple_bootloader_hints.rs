@@ -1,5 +1,8 @@
-use std::collections::HashMap;
-
+use crate::hints::execute_task_hints::ALL_BUILTINS;
+use crate::hints::fact_topologies::FactTopology;
+use crate::hints::types::{RunProgramTask, SimpleBootloaderInput, TaskSpec};
+use crate::hints::vars;
+use crate::CairoPieTask;
 use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::{
     get_integer_from_var_name, get_ptr_from_var_name, insert_value_from_var_name,
     insert_value_into_ap,
@@ -13,11 +16,8 @@ use cairo_vm::vm::vm_core::VirtualMachine;
 use cairo_vm::Felt252;
 use num_traits::ToPrimitive;
 use starknet_types_core::felt::NonZeroFelt;
-
-use crate::hints::fact_topologies::FactTopology;
-use crate::hints::types::SimpleBootloaderInput;
-use crate::hints::vars;
-
+use std::any::Any;
+use std::collections::HashMap;
 /// Implements
 /// n_tasks = len(simple_bootloader_input.tasks)
 /// memory[ids.output_ptr] = n_tasks
@@ -45,8 +45,7 @@ pub fn prepare_task_range_checks(
     vm.insert_value(output_ptr, Felt252::from(n_tasks))?;
 
     // ids.task_range_check_ptr = ids.range_check_ptr + ids.BuiltinData.SIZE * n_tasks
-    // BuiltinData is a struct with 8 members defined in execute_task.cairo.
-    const BUILTIN_DATA_SIZE: usize = 8;
+    const BUILTIN_DATA_SIZE: usize = ALL_BUILTINS.len();
     let range_check_ptr = get_ptr_from_var_name("range_check_ptr", vm, ids_data, ap_tracking)?;
     let task_range_check_ptr = (range_check_ptr + BUILTIN_DATA_SIZE * n_tasks)?;
     insert_value_from_var_name(
@@ -100,6 +99,38 @@ pub fn set_ap_to_zero(vm: &mut VirtualMachine) -> Result<(), HintError> {
     Ok(())
 }
 
+/// Implements %{ 1 if task.use_poseidon else 0 %} (compiled to %{ memory[ap] = to_felt_or_relocatable(1 if task.use_poseidon else 0) %}).
+///
+/// Stores 0 or 1 in the AP and returns.
+/// Used as `tempvar use_poseidon = nondet %{ 1 if task.use_poseidon else 0 %}`.
+pub fn set_ap_to_zero_or_one(
+    vm: &mut VirtualMachine,
+    exec_scopes: &mut ExecutionScopes,
+    ids_data: &HashMap<String, HintReference>,
+    ap_tracking: &ApTracking,
+) -> Result<(), HintError> {
+    let simple_bootloader_input: &SimpleBootloaderInput =
+        exec_scopes.get_ref(vars::SIMPLE_BOOTLOADER_INPUT)?;
+    let n_tasks_felt = get_integer_from_var_name("n_tasks", vm, ids_data, ap_tracking)?;
+    let n_tasks = n_tasks_felt
+        .to_usize()
+        .ok_or(MathError::Felt252ToUsizeConversion(Box::new(n_tasks_felt)))?;
+    let task_id = simple_bootloader_input.tasks.len() - n_tasks;
+    let task = simple_bootloader_input.tasks[task_id].load_task();
+    let use_poseidon = match task {
+        Ok(task) => {
+            if let Some(run_program_task) = task.as_any().downcast_ref::<RunProgramTask>() {
+                run_program_task.use_poseidon
+            } else {
+                false
+            }
+        }
+        Err(_) => false,
+    };
+    insert_value_into_ap(vm, Felt252::from(use_poseidon))?;
+    Ok(())
+}
+
 /// Implements
 /// from starkware.cairo.bootloaders.simple_bootloader.objects import Task
 ///
@@ -123,8 +154,18 @@ pub fn set_current_task(
     // TODO: it's still unclear how we need to model TaskSpec/Task objects.
     //       Check if we need to keep TaskSpec, or if it needs to be implemented as a trait, etc.
     let task = simple_bootloader_input.tasks[task_id].load_task();
-
-    exec_scopes.insert_value(vars::TASK, task.clone());
+    match task {
+        Ok(task) => {
+            if let Some(run_program_task) = task.as_any().downcast_ref::<RunProgramTask>() {
+                exec_scopes
+                    .insert_value(vars::TASK, TaskSpec::RunProgram(run_program_task.clone()));
+            } else if let Some(cairo_pie_task) = task.as_any().downcast_ref::<CairoPieTask>() {
+                exec_scopes
+                    .insert_value(vars::TASK, TaskSpec::CairoPieTask(cairo_pie_task.clone()));
+            }
+        }
+        Err(_) => return Err(HintError::CustomHint("Task not found".into())),
+    }
 
     Ok(())
 }
@@ -172,12 +213,16 @@ mod tests {
             fact_topologies_path: None,
             single_page: false,
             tasks: vec![
-                TaskSpec {
-                    task: Task::Program(fibonacci.clone()),
-                },
-                TaskSpec {
-                    task: Task::Program(fibonacci.clone()),
-                },
+                TaskSpec::RunProgram(RunProgramTask {
+                    program: fibonacci.clone(),
+                    program_input: HashMap::new(),
+                    use_poseidon: true,
+                }),
+                TaskSpec::RunProgram(RunProgramTask {
+                    program: fibonacci.clone(),
+                    program_input: HashMap::new(),
+                    use_poseidon: true,
+                }),
             ],
         }
     }
@@ -282,6 +327,26 @@ mod tests {
     }
 
     #[rstest]
+    fn test_set_ap_to_zero_or_one(simple_bootloader_input: SimpleBootloaderInput) {
+        // Set n_tasks to 1
+        let mut vm = vm!();
+        vm.set_fp(1);
+        define_segments!(vm, 2, [((1, 0), 1)]);
+
+        let mut exec_scopes = ExecutionScopes::new();
+        exec_scopes.insert_value(vars::SIMPLE_BOOTLOADER_INPUT, simple_bootloader_input);
+
+        let ids_data = ids_data!["n_tasks"];
+        let ap_tracking = ApTracking::new();
+        set_ap_to_zero_or_one(&mut vm, &mut exec_scopes, &ids_data, &ap_tracking)
+            .expect("Hint failed unexpectedly");
+
+        let ap_value = vm.get_integer(vm.get_ap()).unwrap().into_owned();
+
+        assert_eq!(ap_value, Felt252::from(1));
+    }
+
+    #[rstest]
     fn test_set_current_task(simple_bootloader_input: SimpleBootloaderInput) {
         // Set n_tasks to 1
         let mut vm = vm!();
@@ -297,8 +362,8 @@ mod tests {
             .expect("Hint failed unexpectedly");
 
         // Check that `task` is set
-        let _task: Task = exec_scopes
-            .get(vars::TASK)
+        let _task: &Box<dyn Any> = exec_scopes
+            .get_any_boxed_ref(vars::TASK)
             .expect("task variable is not set.");
     }
 }
