@@ -15,31 +15,37 @@ pub enum BootloaderTaskError {
 }
 
 pub fn make_bootloader_tasks(
-    programs: &[&[u8]],
+    programs: Option<&[&Path]>,
     program_inputs: Vec<HashMap<String, serde_json::Value>>,
-    pies: &[&Path],
+    pies: Option<&[&Path]>,
 ) -> Result<Vec<TaskSpec>, BootloaderTaskError> {
-    let program_tasks =
-        programs
-            .iter()
-            .zip(program_inputs.iter())
-            .map(|(program_bytes, program_input)| {
-                let program = Program::from_bytes(program_bytes, Some("main"))
+    let mut tasks: Vec<TaskSpec> = Vec::new();
+    if let Some(programs) = programs {
+        programs.iter().zip(program_inputs.iter()).try_for_each(
+            |(program_file, program_input)| -> Result<(), BootloaderTaskError> {
+                let program = Program::from_file(program_file, Some("main"))
                     .map_err(BootloaderTaskError::Program)?;
-                Ok(TaskSpec::RunProgram(RunProgramTask {
+                tasks.push(TaskSpec::RunProgram(RunProgramTask {
                     program,
                     program_input: program_input.clone(),
                     use_poseidon: false,
-                }))
-            });
+                }));
+                Ok(())
+            },
+        )?;
+    }
 
-    let cairo_pie_tasks = pies.iter().map(|pie| {
-        let cairo_pie = CairoPie::read_zip_file(pie).map_err(BootloaderTaskError::Pie)?;
-        Ok(TaskSpec::CairoPieTask(CairoPieTask {
-            cairo_pie,
-            use_poseidon: false,
-        }))
-    });
+    if let Some(pies) = pies {
+        pies.iter()
+            .try_for_each(|pie| -> Result<(), BootloaderTaskError> {
+                let cairo_pie = CairoPie::read_zip_file(pie).map_err(BootloaderTaskError::Pie)?;
+                tasks.push(TaskSpec::CairoPieTask(CairoPieTask {
+                    cairo_pie,
+                    use_poseidon: false,
+                }));
+                Ok(())
+            })?;
+    }
 
-    program_tasks.chain(cairo_pie_tasks).collect()
+    Ok(tasks)
 }
