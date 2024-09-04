@@ -261,12 +261,12 @@ mod tests {
             .unwrap();
         assert_eq!(output, simple_bootloader_input.tasks.len());
 
-        // Assert task_range_check_ptr == range_check_ptr (2, 2) + BUILTIN_DATA_SIZE (8) * n_tasks (2)
+        // Assert task_range_check_ptr == range_check_ptr (2, 2) + BUILTIN_DATA_SIZE (9) * n_tasks (2)
         assert_eq!(
             task_range_check_ptr,
             Relocatable {
                 segment_index: 2,
-                offset: 18
+                offset: 20
             }
         );
 

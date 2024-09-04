@@ -857,18 +857,19 @@ mod tests {
                 ((1, 5), (2, 6)),
                 ((1, 6), (2, 7)),
                 ((1, 7), (2, 8)),
-                ((1, 8), (2, 30)),
-                ((1, 9), (2, 50)),
-                ((1, 24), (1, 8)),
+                ((1, 8), (2, 9)),
+                ((1, 9), (2, 30)),
+                ((1, 10), (2, 50)),
+                ((1, 26), (1, 9)),
             ]
         );
-        vm.set_fp(25);
+        vm.set_fp(27);
         add_segments!(vm, 1);
 
         // Note that used_builtins_addr is a pointer to the used builtins list at (1, 8)
         let ids_data = non_continuous_ids_data![
-            ("pre_execution_builtin_ptrs", -25),
-            ("return_builtin_ptrs", -9),
+            ("pre_execution_builtin_ptrs", -27),
+            ("return_builtin_ptrs", -10),
             ("used_builtins_addr", -1),
         ];
         let ap_tracking = ApTracking::new();
@@ -883,9 +884,8 @@ mod tests {
 
         // Check that the return builtins were written correctly
         let return_builtins = vm
-            .get_continuous_range(Relocatable::from((1, 16)), 8)
+            .get_continuous_range(Relocatable::from((1, 17)), 9)
             .expect("Return builtin was not properly written to memory.");
-
         let expected_builtins = vec![
             Relocatable::from((2, 1)),
             Relocatable::from((2, 2)),
