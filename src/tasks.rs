@@ -16,11 +16,17 @@ pub enum BootloaderTaskError {
 
 pub fn make_bootloader_tasks(
     programs: Option<&[&Path]>,
-    program_inputs: Vec<HashMap<String, serde_json::Value>>,
+    program_inputs: Option<&[HashMap<String, serde_json::Value>]>,
     pies: Option<&[&Path]>,
 ) -> Result<Vec<TaskSpec>, BootloaderTaskError> {
     let mut tasks: Vec<TaskSpec> = Vec::new();
-    if let Some(programs) = programs {
+    if let (Some(programs), Some(program_inputs)) = (programs, program_inputs) {
+        assert_eq!(
+            programs.len(),
+            program_inputs.len(),
+            "The length of programs and program_inputs must be equal"
+        );
+
         programs.iter().zip(program_inputs.iter()).try_for_each(
             |(program_file, program_input)| -> Result<(), BootloaderTaskError> {
                 let program = Program::from_file(program_file, Some("main"))

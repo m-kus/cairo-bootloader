@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::error::Error;
+use std::path::Path;
 
 use cairo_vm::cairo_run::{cairo_run_program_with_initial_scope, CairoRunConfig};
 use cairo_vm::types::exec_scope::ExecutionScopes;
@@ -64,11 +65,11 @@ fn cairo_run_bootloader_in_proof_mode(
 
 fn main() -> Result<(), Box<dyn Error>> {
     let bootloader_program = load_bootloader()?;
-    let fibonacci_program = include_bytes!("fibonacci.json");
-    // let fibonacci_pie_path =
-    //     Path::new("./dependencies/test-programs/bootloader/pies/fibonacci/cairo_pie.zip");
+    let program_paths = vec![Path::new("./examples/fibonacci.json")];
+    // let pie_paths =
+    //     vec![Path::new("./dependencies/test-programs/bootloader/pies/fibonacci/cairo_pie.zip")];
     let program_inputs = vec![HashMap::new()];
-    let tasks = make_bootloader_tasks(&[fibonacci_program], program_inputs, &[])?;
+    let tasks = make_bootloader_tasks(Some(&program_paths), Some(&program_inputs), None)?;
 
     let mut runner = cairo_run_bootloader_in_proof_mode(&bootloader_program, tasks)?;
 
