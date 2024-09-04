@@ -3,6 +3,7 @@ use cairo_vm::types::errors::program_errors::ProgramError;
 use cairo_vm::types::program::Program;
 use cairo_vm::vm::runners::cairo_pie::CairoPie;
 use std::collections::HashMap;
+use std::path::Path;
 
 #[derive(thiserror::Error, Debug)]
 pub enum BootloaderTaskError {
@@ -16,7 +17,7 @@ pub enum BootloaderTaskError {
 pub fn make_bootloader_tasks(
     programs: &[&[u8]],
     program_inputs: Vec<HashMap<String, serde_json::Value>>,
-    pies: &[&[u8]],
+    pies: &[&Path],
 ) -> Result<Vec<TaskSpec>, BootloaderTaskError> {
     let program_tasks =
         programs
@@ -33,7 +34,7 @@ pub fn make_bootloader_tasks(
             });
 
     let cairo_pie_tasks = pies.iter().map(|pie| {
-        let cairo_pie = CairoPie::from_bytes(pie).map_err(BootloaderTaskError::Pie)?;
+        let cairo_pie = CairoPie::read_zip_file(pie).map_err(BootloaderTaskError::Pie)?;
         Ok(TaskSpec::CairoPieTask(CairoPieTask {
             cairo_pie,
             use_poseidon: false,

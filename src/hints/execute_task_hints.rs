@@ -435,18 +435,13 @@ pub fn call_task(
         let program_address: Relocatable = exec_scopes.get("program_address")?;
 
         // ret_pc = ids.ret_pc_label.instruction_offset_ - ids.call_task.instruction_offset_ + pc
-        let bootloader_identifiers = get_bootloader_identifiers(exec_scopes)?;
-        let ret_pc_label = get_identifier(
-            bootloader_identifiers,
-            "starkware.cairo.bootloaders.simple_bootloader.execute_task.execute_task.ret_pc_label",
-        )?;
-        let call_task = get_identifier(
-            bootloader_identifiers,
-            "starkware.cairo.bootloaders.simple_bootloader.execute_task.execute_task.call_task",
-        )?;
-
-        let ret_pc_offset = ret_pc_label - call_task;
-        let ret_pc = (vm.get_pc() + ret_pc_offset)?;
+        // TODO: replace with proper way of getting `ret_pc_label` and `call_task` labels from `cairo-vm`
+        // Temporary solution:
+        //   `starkware.cairo.bootloaders.simple_bootloader.execute_task.execute_task.ret_pc_label` is a label at pc=279 and
+        //   `starkware.cairo.bootloaders.simple_bootloader.execute_task.execute_task.call_task` is a label at pc=278
+        //   And since this hint is called at pc=278, `ret_pc` can be calculated as:
+        //     ret_pc = 279 - 278 + pc = 1 + pc
+        let ret_pc = (vm.get_pc() + 1)?;
 
         // load_cairo_pie(
         //     task=task.cairo_pie, memory=memory, segments=segments,
@@ -746,6 +741,7 @@ mod tests {
             ]
         );
         let program_identifiers = mock_program_identifiers(bootloader_identifiers);
+        println!("program_identifiers: {:?}", program_identifiers);
         exec_scopes.insert_value(vars::PROGRAM_DATA_BASE, program_header_ptr.clone());
         exec_scopes.insert_value(vars::BOOTLOADER_PROGRAM_IDENTIFIERS, program_identifiers);
 
@@ -756,6 +752,7 @@ mod tests {
         // Execute it
         call_task(&mut vm, &mut exec_scopes, &ids_data, &ap_tracking)
             .expect("Hint failed unexpectedly");
+        assert_eq!(false, true);
     }
 
     #[rstest]

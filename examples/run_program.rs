@@ -65,7 +65,8 @@ fn cairo_run_bootloader_in_proof_mode(
 fn main() -> Result<(), Box<dyn Error>> {
     let bootloader_program = load_bootloader()?;
     let fibonacci_program = include_bytes!("fibonacci.json");
-
+    // let fibonacci_pie_path =
+    //     Path::new("./dependencies/test-programs/bootloader/pies/fibonacci/cairo_pie.zip");
     let program_inputs = vec![HashMap::new()];
     let tasks = make_bootloader_tasks(&[fibonacci_program], program_inputs, &[])?;
 
