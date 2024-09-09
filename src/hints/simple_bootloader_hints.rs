@@ -7,7 +7,7 @@ use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::{
     get_integer_from_var_name, get_ptr_from_var_name, insert_value_from_var_name,
     insert_value_into_ap,
 };
-use cairo_vm::hint_processor::hint_processor_definition::HintReference;
+use cairo_vm::hint_processor::hint_processor_definition::{HintExtension, HintReference};
 use cairo_vm::serde::deserialize_program::ApTracking;
 use cairo_vm::types::errors::math_errors::MathError;
 use cairo_vm::types::exec_scope::ExecutionScopes;
@@ -34,7 +34,7 @@ pub fn prepare_task_range_checks(
     exec_scopes: &mut ExecutionScopes,
     ids_data: &HashMap<String, HintReference>,
     ap_tracking: &ApTracking,
-) -> Result<(), HintError> {
+) -> Result<HintExtension, HintError> {
     // n_tasks = len(simple_bootloader_input.tasks)
     let simple_bootloader_input: &SimpleBootloaderInput =
         exec_scopes.get_ref(vars::SIMPLE_BOOTLOADER_INPUT)?;
@@ -60,17 +60,17 @@ pub fn prepare_task_range_checks(
     let fact_topologies = Vec::<FactTopology>::new();
     exec_scopes.insert_value(vars::FACT_TOPOLOGIES, fact_topologies);
 
-    Ok(())
+    Ok(HashMap::new())
 }
 
 /// Implements
 /// %{ tasks = simple_bootloader_input.tasks %}
-pub fn set_tasks_variable(exec_scopes: &mut ExecutionScopes) -> Result<(), HintError> {
+pub fn set_tasks_variable(exec_scopes: &mut ExecutionScopes) -> Result<HintExtension, HintError> {
     let simple_bootloader_input: &SimpleBootloaderInput =
         exec_scopes.get_ref(vars::SIMPLE_BOOTLOADER_INPUT)?;
     exec_scopes.insert_value(vars::TASKS, simple_bootloader_input.tasks.clone());
 
-    Ok(())
+    Ok(HashMap::new())
 }
 
 /// Implements %{ ids.num // 2 %}
@@ -79,7 +79,7 @@ pub fn divide_num_by_2(
     vm: &mut VirtualMachine,
     ids_data: &HashMap<String, HintReference>,
     ap_tracking: &ApTracking,
-) -> Result<(), HintError> {
+) -> Result<HintExtension, HintError> {
     let felt = get_integer_from_var_name("num", vm, ids_data, ap_tracking)?;
     // Unwrapping is safe in this context, 2 != 0
     let two = NonZeroFelt::try_from(Felt252::from(2)).unwrap();
@@ -87,16 +87,16 @@ pub fn divide_num_by_2(
 
     insert_value_into_ap(vm, felt_divided_by_2)?;
 
-    Ok(())
+    Ok(HashMap::new())
 }
 
 /// Implements %{ 0 %} (compiled to %{ memory[ap] = to_felt_or_relocatable(0) %}).
 ///
 /// Stores 0 in the AP and returns.
 /// Used as `tempvar use_poseidon = nondet %{ 0 %}`.
-pub fn set_ap_to_zero(vm: &mut VirtualMachine) -> Result<(), HintError> {
+pub fn set_ap_to_zero(vm: &mut VirtualMachine) -> Result<HintExtension, HintError> {
     insert_value_into_ap(vm, Felt252::from(0))?;
-    Ok(())
+    Ok(HashMap::new())
 }
 
 /// Implements %{ 1 if task.use_poseidon else 0 %} (compiled to %{ memory[ap] = to_felt_or_relocatable(1 if task.use_poseidon else 0) %}).
@@ -108,7 +108,7 @@ pub fn set_ap_to_zero_or_one(
     exec_scopes: &mut ExecutionScopes,
     ids_data: &HashMap<String, HintReference>,
     ap_tracking: &ApTracking,
-) -> Result<(), HintError> {
+) -> Result<HintExtension, HintError> {
     let simple_bootloader_input: &SimpleBootloaderInput =
         exec_scopes.get_ref(vars::SIMPLE_BOOTLOADER_INPUT)?;
     let n_tasks_felt = get_integer_from_var_name("n_tasks", vm, ids_data, ap_tracking)?;
@@ -128,7 +128,7 @@ pub fn set_ap_to_zero_or_one(
         Err(_) => false,
     };
     insert_value_into_ap(vm, Felt252::from(use_poseidon))?;
-    Ok(())
+    Ok(HashMap::new())
 }
 
 /// Implements
@@ -142,7 +142,7 @@ pub fn set_current_task(
     exec_scopes: &mut ExecutionScopes,
     ids_data: &HashMap<String, HintReference>,
     ap_tracking: &ApTracking,
-) -> Result<(), HintError> {
+) -> Result<HintExtension, HintError> {
     let simple_bootloader_input: &SimpleBootloaderInput =
         exec_scopes.get_ref(vars::SIMPLE_BOOTLOADER_INPUT)?;
     let n_tasks_felt = get_integer_from_var_name("n_tasks", vm, ids_data, ap_tracking)?;
@@ -167,7 +167,7 @@ pub fn set_current_task(
         Err(_) => return Err(HintError::CustomHint("Task not found".into())),
     }
 
-    Ok(())
+    Ok(HashMap::new())
 }
 
 #[cfg(test)]

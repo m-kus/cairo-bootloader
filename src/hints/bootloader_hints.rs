@@ -6,7 +6,7 @@ use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::{
     get_integer_from_var_name, get_ptr_from_var_name, insert_value_from_var_name,
     insert_value_into_ap,
 };
-use cairo_vm::hint_processor::hint_processor_definition::HintReference;
+use cairo_vm::hint_processor::hint_processor_definition::{HintExtension, HintReference};
 use cairo_vm::serde::deserialize_program::ApTracking;
 use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::types::relocatable::{MaybeRelocatable, Relocatable};
@@ -40,7 +40,7 @@ pub fn prepare_simple_bootloader_output_segment(
     exec_scopes: &mut ExecutionScopes,
     ids_data: &HashMap<String, HintReference>,
     ap_tracking: &ApTracking,
-) -> Result<(), HintError> {
+) -> Result<HintExtension, HintError> {
     // Python: bootloader_input = BootloaderInput.Schema().load(program_input)
     // -> Assert that the bootloader input has been loaded when setting up the VM
     let _bootloader_input: &BootloaderInput = exec_scopes.get_ref(vars::BOOTLOADER_INPUT)?;
@@ -71,18 +71,20 @@ pub fn prepare_simple_bootloader_output_segment(
         ap_tracking,
     )?;
 
-    Ok(())
+    Ok(HashMap::new())
 }
 
 /// Implements %{ simple_bootloader_input = bootloader_input %}
-pub fn prepare_simple_bootloader_input(exec_scopes: &mut ExecutionScopes) -> Result<(), HintError> {
+pub fn prepare_simple_bootloader_input(
+    exec_scopes: &mut ExecutionScopes,
+) -> Result<HintExtension, HintError> {
     let bootloader_input: BootloaderInput = exec_scopes.get(vars::BOOTLOADER_INPUT)?;
     exec_scopes.insert_value(
         vars::SIMPLE_BOOTLOADER_INPUT,
         bootloader_input.simple_bootloader_input,
     );
 
-    Ok(())
+    Ok(HashMap::new())
 }
 
 /// Implements
@@ -91,11 +93,11 @@ pub fn prepare_simple_bootloader_input(exec_scopes: &mut ExecutionScopes) -> Res
 pub fn restore_bootloader_output(
     vm: &mut VirtualMachine,
     exec_scopes: &mut ExecutionScopes,
-) -> Result<(), HintError> {
+) -> Result<HintExtension, HintError> {
     let output_builtin_state: OutputBuiltinState = exec_scopes.get(vars::OUTPUT_BUILTIN_STATE)?;
     vm.get_output_builtin_mut()?.set_state(output_builtin_state);
 
-    Ok(())
+    Ok(HashMap::new())
 }
 /// Mimics the behaviour of the Python VM `gen_arg`.
 ///
@@ -144,7 +146,7 @@ pub fn load_bootloader_config(
     exec_scopes: &mut ExecutionScopes,
     ids_data: &HashMap<String, HintReference>,
     ap_tracking: &ApTracking,
-) -> Result<(), HintError> {
+) -> Result<HintExtension, HintError> {
     let bootloader_input: BootloaderInput = exec_scopes.get(vars::BOOTLOADER_INPUT)?;
     let config = bootloader_input.bootloader_config;
 
@@ -173,7 +175,7 @@ pub fn load_bootloader_config(
     let args_segment = gen_arg(vm, &args)?;
     insert_value_from_var_name("bootloader_config", args_segment, vm, ids_data, ap_tracking)?;
 
-    Ok(())
+    Ok(HashMap::new())
 }
 
 /// Implements
@@ -188,7 +190,7 @@ pub fn enter_packed_output_scope(
     exec_scopes: &mut ExecutionScopes,
     ids_data: &HashMap<String, HintReference>,
     ap_tracking: &ApTracking,
-) -> Result<(), HintError> {
+) -> Result<HintExtension, HintError> {
     // task_id = len(packed_outputs) - ids.n_subtasks
     let packed_outputs: Vec<PackedOutput> = exec_scopes.get(vars::PACKED_OUTPUTS)?;
     let n_subtasks = get_integer_from_var_name("n_subtasks", vm, ids_data, ap_tracking)
@@ -205,7 +207,7 @@ pub fn enter_packed_output_scope(
         packed_output,
     )]));
 
-    Ok(())
+    Ok(HashMap::new())
 }
 
 /// Implements
@@ -213,9 +215,9 @@ pub fn enter_packed_output_scope(
 ///     CompositePackedOutput,
 ///     PlainPackedOutput,
 /// )
-pub fn import_packed_output_schemas() -> Result<(), HintError> {
+pub fn import_packed_output_schemas() -> Result<HintExtension, HintError> {
     // Nothing to do!
-    Ok(())
+    Ok(HashMap::new())
 }
 
 /// Implements %{ isinstance(packed_output, PlainPackedOutput) %}
@@ -225,7 +227,7 @@ pub fn import_packed_output_schemas() -> Result<(), HintError> {
 pub fn is_plain_packed_output(
     vm: &mut VirtualMachine,
     exec_scopes: &mut ExecutionScopes,
-) -> Result<(), HintError> {
+) -> Result<HintExtension, HintError> {
     let packed_output: PackedOutput = exec_scopes.get(vars::PACKED_OUTPUT)?;
     let result = match packed_output {
         PackedOutput::Plain(_) => 1,
@@ -233,18 +235,18 @@ pub fn is_plain_packed_output(
     };
     insert_value_into_ap(vm, result)?;
 
-    Ok(())
+    Ok(HashMap::new())
 }
 
 /// Implements
 /// %{ assert isinstance(packed_output, CompositePackedOutput) %}
 pub fn assert_is_composite_packed_output(
     exec_scopes: &mut ExecutionScopes,
-) -> Result<(), HintError> {
+) -> Result<HintExtension, HintError> {
     let packed_output: PackedOutput = exec_scopes.get(vars::PACKED_OUTPUT)?;
 
     match packed_output {
-        PackedOutput::Composite(_) => Ok(()),
+        PackedOutput::Composite(_) => Ok(HashMap::new()),
         other => Err(HintError::CustomHint(
             format!("Expected composite packed output, got {:?}", other).into_boxed_str(),
         )),
@@ -262,10 +264,10 @@ pub fn save_output_pointer(
     exec_scopes: &mut ExecutionScopes,
     ids_data: &HashMap<String, HintReference>,
     ap_tracking: &ApTracking,
-) -> Result<(), HintError> {
+) -> Result<HintExtension, HintError> {
     let output_ptr = get_ptr_from_var_name("output_ptr", vm, ids_data, ap_tracking)?;
     exec_scopes.insert_value(vars::OUTPUT_START, output_ptr);
-    Ok(())
+    Ok(HashMap::new())
 }
 
 /*
@@ -274,11 +276,11 @@ Implements hint:
     packed_outputs = bootloader_input.packed_outputs
 %}
 */
-pub fn save_packed_outputs(exec_scopes: &mut ExecutionScopes) -> Result<(), HintError> {
+pub fn save_packed_outputs(exec_scopes: &mut ExecutionScopes) -> Result<HintExtension, HintError> {
     let bootloader_input: &BootloaderInput = exec_scopes.get_ref("bootloader_input")?;
     let packed_outputs = bootloader_input.packed_outputs.clone();
     exec_scopes.insert_value("packed_outputs", packed_outputs);
-    Ok(())
+    Ok(HashMap::new())
 }
 
 /// Implements
@@ -310,7 +312,7 @@ pub fn save_packed_outputs(exec_scopes: &mut ExecutionScopes) -> Result<(), Hint
 pub fn compute_and_configure_fact_topologies(
     vm: &mut VirtualMachine,
     exec_scopes: &mut ExecutionScopes,
-) -> Result<(), HintError> {
+) -> Result<HintExtension, HintError> {
     let packed_outputs: Vec<PackedOutput> = exec_scopes.get(vars::PACKED_OUTPUTS)?;
     let fact_topologies: Vec<FactTopology> = exec_scopes.get(vars::FACT_TOPOLOGIES)?;
     let mut output_start: Relocatable = exec_scopes.get(vars::OUTPUT_START)?;
@@ -333,7 +335,7 @@ pub fn compute_and_configure_fact_topologies(
             .map_err(Into::<HintError>::into)?;
     }
 
-    Ok(())
+    Ok(HashMap::new())
 }
 
 fn unwrap_composite_output(
@@ -355,13 +357,15 @@ Implements hint:
     packed_outputs = packed_output.subtasks
 %}
 */
-pub fn set_packed_output_to_subtasks(exec_scopes: &mut ExecutionScopes) -> Result<(), HintError> {
+pub fn set_packed_output_to_subtasks(
+    exec_scopes: &mut ExecutionScopes,
+) -> Result<HintExtension, HintError> {
     let packed_output: PackedOutput = exec_scopes.get(vars::PACKED_OUTPUT)?;
     let composite_packed_output = unwrap_composite_output(packed_output)?;
     let subtasks = composite_packed_output.subtasks;
     exec_scopes.insert_value(vars::PACKED_OUTPUTS, subtasks);
 
-    Ok(())
+    Ok(HashMap::new())
 }
 
 /*
@@ -377,7 +381,7 @@ pub fn guess_pre_image_of_subtasks_output_hash(
     exec_scopes: &mut ExecutionScopes,
     ids_data: &HashMap<String, HintReference>,
     ap_tracking: &ApTracking,
-) -> Result<(), HintError> {
+) -> Result<HintExtension, HintError> {
     let packed_output: PackedOutput = exec_scopes.get(vars::PACKED_OUTPUT)?;
     let composite_packed_output = unwrap_composite_output(packed_output)?;
 
@@ -403,7 +407,7 @@ pub fn guess_pre_image_of_subtasks_output_hash(
         ap_tracking,
     )?;
 
-    Ok(())
+    Ok(HashMap::new())
 }
 
 /*
@@ -418,7 +422,7 @@ pub fn assert_program_address(
     exec_scopes: &mut ExecutionScopes,
     ids_data: &HashMap<String, HintReference>,
     ap_tracking: &ApTracking,
-) -> Result<(), HintError> {
+) -> Result<HintExtension, HintError> {
     let ids_program_address =
         get_ptr_from_var_name(vars::PROGRAM_ADDRESS, vm, ids_data, ap_tracking)?;
     let program_address: Relocatable = exec_scopes.get(vars::PROGRAM_ADDRESS)?;
@@ -428,7 +432,7 @@ pub fn assert_program_address(
             "program address is incorrect".to_string().into_boxed_str(),
         ));
     }
-    Ok(())
+    Ok(HashMap::new())
 }
 
 #[cfg(test)]
@@ -770,13 +774,13 @@ mod tests {
             HintProcessorData::new_default(String::from(BOOTLOADER_SAVE_OUTPUT_POINTER), ids_data);
         let mut hint_processor = MinimalBootloaderHintProcessor::new();
         assert_matches!(
-            hint_processor.execute_hint(
+            hint_processor.execute_hint_extensive(
                 &mut vm,
                 &mut exec_scopes,
                 &any_box!(hint_data),
                 &HashMap::new(),
             ),
-            Ok(())
+            Ok(map) if map.is_empty()
         );
 
         let output_ptr = exec_scopes.get::<Relocatable>("output_start");
@@ -818,13 +822,13 @@ mod tests {
         );
         let mut hint_processor = MinimalBootloaderHintProcessor::new();
         assert_matches!(
-            hint_processor.execute_hint(
+            hint_processor.execute_hint_extensive(
                 &mut vm,
                 &mut exec_scopes,
                 &any_box!(hint_data),
                 &HashMap::new(),
             ),
-            Ok(())
+            Ok(map) if map.is_empty()
         );
 
         let saved_packed_outputs = exec_scopes.get::<Vec<PackedOutput>>("packed_outputs");
@@ -917,13 +921,13 @@ mod tests {
         );
         let mut hint_processor = MinimalBootloaderHintProcessor::new();
         assert_matches!(
-            hint_processor.execute_hint(
+            hint_processor.execute_hint_extensive(
                 &mut vm,
                 &mut exec_scopes,
                 &any_box!(hint_data),
                 &HashMap::new(),
             ),
-            Ok(())
+            Ok(map) if map.is_empty()
         );
 
         let packed_outputs: Vec<PackedOutput> = exec_scopes.get(vars::PACKED_OUTPUTS).unwrap();
@@ -957,7 +961,7 @@ mod tests {
                 BOOTLOADER_GUESS_PRE_IMAGE_OF_SUBTASKS_OUTPUT_HASH,
                 &mut exec_scopes
             ),
-            Ok(())
+            Ok(map) if map.is_empty()
         );
         let nested_subtasks_output_len =
             get_integer_from_var_name("nested_subtasks_output_len", &vm, &ids_data, &ap_tracking)

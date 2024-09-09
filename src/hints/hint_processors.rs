@@ -5,7 +5,6 @@ use std::rc::Rc;
 use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{
     BuiltinHintProcessor, HintFunc, HintProcessorData,
 };
-use cairo_vm::hint_processor::builtin_hint_processor::memcpy_hint_utils::exit_scope;
 use cairo_vm::hint_processor::hint_processor_definition::{HintExtension, HintProcessorLogic};
 use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::vm::errors::hint_errors::HintError;
@@ -24,8 +23,8 @@ use crate::hints::bootloader_hints::{
 };
 use crate::hints::codes::*;
 use crate::hints::execute_task_hints::{
-    allocate_program_data_segment, append_fact_topologies, call_task, load_program_hint,
-    validate_hash, write_return_builtins_hint,
+    allocate_program_data_segment, append_fact_topologies, call_task, exit_scope_with_comments,
+    load_program_hint, validate_hash, write_return_builtins_hint,
 };
 use crate::hints::inner_select_builtins::select_builtin;
 use crate::hints::select_builtins::select_builtins_enter_scope;
@@ -51,21 +50,20 @@ impl MinimalBootloaderHintProcessor {
 }
 
 impl HintProcessorLogic for MinimalBootloaderHintProcessor {
-    fn execute_hint(
+    fn execute_hint_extensive(
         &mut self,
         vm: &mut VirtualMachine,
         exec_scopes: &mut ExecutionScopes,
         hint_data: &Box<dyn Any>,
         _constants: &HashMap<String, Felt252>,
-    ) -> Result<(), HintError> {
+    ) -> Result<HintExtension, HintError> {
         let hint_data = hint_data
             .downcast_ref::<HintProcessorData>()
             .ok_or(HintError::WrongHintData)?;
 
         let ids_data = &hint_data.ids_data;
         let ap_tracking = &hint_data.ap_tracking;
-
-        match hint_data.code.as_str() {
+        let hint_extension = match hint_data.code.as_str() {
             BOOTLOADER_RESTORE_BOOTLOADER_OUTPUT => restore_bootloader_output(vm, exec_scopes),
             BOOTLOADER_PREPARE_SIMPLE_BOOTLOADER_INPUT => {
                 prepare_simple_bootloader_input(exec_scopes)
@@ -120,14 +118,14 @@ impl HintProcessorLogic for MinimalBootloaderHintProcessor {
             EXECUTE_TASK_ASSERT_PROGRAM_ADDRESS => {
                 assert_program_address(vm, exec_scopes, ids_data, ap_tracking)
             }
-            EXECUTE_TASK_CALL_TASK => call_task(vm, exec_scopes, ids_data, ap_tracking),
+            EXECUTE_TASK_CALL_TASK => call_task(self, vm, exec_scopes, ids_data, ap_tracking),
             EXECUTE_TASK_WRITE_RETURN_BUILTINS => {
                 write_return_builtins_hint(vm, exec_scopes, ids_data, ap_tracking)
             }
-            EXECUTE_TASK_EXIT_SCOPE => exit_scope(exec_scopes),
             EXECUTE_TASK_APPEND_FACT_TOPOLOGIES => {
                 append_fact_topologies(vm, exec_scopes, ids_data, ap_tracking)
             }
+            EXECUTE_TASK_EXIT_SCOPE => exit_scope_with_comments(exec_scopes),
             SELECT_BUILTINS_ENTER_SCOPE => {
                 select_builtins_enter_scope(vm, exec_scopes, ids_data, ap_tracking)
             }
@@ -137,7 +135,23 @@ impl HintProcessorLogic for MinimalBootloaderHintProcessor {
             unknown_hint_code => Err(HintError::UnknownHint(
                 unknown_hint_code.to_string().into_boxed_str(),
             )),
-        }
+        };
+
+        hint_extension
+    }
+
+    fn execute_hint(
+        &mut self,
+        _vm: &mut VirtualMachine,
+        _exec_scopes: &mut ExecutionScopes,
+        hint_data: &Box<dyn Any>,
+        _constants: &HashMap<String, Felt252>,
+    ) -> Result<(), HintError> {
+        // This method will never be called, but must be defined for `HintProcessorLogic`.
+
+        let hint_data = hint_data.downcast_ref::<HintProcessorData>().unwrap();
+        let hint_code = &hint_data.code;
+        Err(HintError::UnknownHint(hint_code.clone().into_boxed_str()))
     }
 }
 

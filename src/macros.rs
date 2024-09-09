@@ -84,7 +84,12 @@ macro_rules! run_hint {
     ($vm:expr, $ids_data:expr, $hint_code:expr, $exec_scopes:expr, $constants:expr) => {{
         let hint_data = HintProcessorData::new_default($hint_code.to_string(), $ids_data);
         let mut hint_processor = $crate::MinimalBootloaderHintProcessor::new();
-        hint_processor.execute_hint(&mut $vm, $exec_scopes, &any_box!(hint_data), $constants)
+        hint_processor.execute_hint_extensive(
+            &mut $vm,
+            $exec_scopes,
+            &any_box!(hint_data),
+            $constants,
+        )
     }};
     ($vm:expr, $ids_data:expr, $hint_code:expr, $exec_scopes:expr) => {{
         let hint_data = HintProcessorData::new_default(
@@ -92,7 +97,7 @@ macro_rules! run_hint {
             $ids_data,
         );
         let mut hint_processor = $crate::MinimalBootloaderHintProcessor::new();
-        hint_processor.execute_hint(
+        hint_processor.execute_hint_extensive(
             &mut $vm,
             $exec_scopes,
             &any_box!(hint_data),
@@ -105,7 +110,7 @@ macro_rules! run_hint {
             $ids_data,
         );
         let mut hint_processor = $crate::MinimalBootloaderHintProcessor::new();
-        hint_processor.execute_hint(
+        hint_processor.execute_hint_extensive(
             &mut $vm,
             exec_scopes_ref!(),
             &any_box!(hint_data),

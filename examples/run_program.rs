@@ -1,8 +1,13 @@
 use std::collections::HashMap;
 use std::error::Error;
 use std::path::Path;
+use std::rc::Rc;
 
 use cairo_vm::cairo_run::{cairo_run_program_with_initial_scope, CairoRunConfig};
+use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintFunc;
+use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::{
+    get_ptr_from_var_name, insert_value_from_var_name,
+};
 use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::types::layout_name::LayoutName;
 use cairo_vm::types::program::Program;
@@ -22,6 +27,31 @@ fn cairo_run_bootloader_in_proof_mode(
     tasks: Vec<TaskSpec>,
 ) -> Result<CairoRunner, CairoRunError> {
     let mut hint_processor = BootloaderHintProcessor::new();
+    hint_processor.add_hint(
+        "ids.fibonacci_claim_index = program_input['fibonacci_claim_index']".to_string(),
+        Rc::new(HintFunc(Box::new(
+            |vm, exec_scopes, ids_data, ap_tracking, _constants| {
+                let program_input: HashMap<String, serde_json::Value> = exec_scopes
+                    .get::<HashMap<String, serde_json::Value>>("program_input")
+                    .unwrap()
+                    .clone();
+                let fibonacci_claim_index: Felt252 = program_input
+                    .get("fibonacci_claim_index")
+                    .unwrap()
+                    .as_u64()
+                    .unwrap()
+                    .into();
+                insert_value_from_var_name(
+                    "fibonacci_claim_index",
+                    fibonacci_claim_index,
+                    vm,
+                    ids_data,
+                    ap_tracking,
+                )?;
+                Ok(())
+            },
+        ))),
+    );
 
     let cairo_run_config = CairoRunConfig {
         entrypoint: "main",
@@ -65,11 +95,17 @@ fn cairo_run_bootloader_in_proof_mode(
 
 fn main() -> Result<(), Box<dyn Error>> {
     let bootloader_program = load_bootloader()?;
-    let program_paths = vec![Path::new("./examples/fibonacci.json")];
-    // let pie_paths =
-    //     vec![Path::new("./dependencies/test-programs/bootloader/pies/fibonacci/cairo_pie.zip")];
-    let program_inputs = vec![HashMap::new()];
+    let program_paths = vec![Path::new("./examples/fibonacci_with_hint.json")];
+    // let pie_paths = vec![Path::new(
+    //     "./dependencies/test-programs/bootloader/pies/fibonacci/cairo_pie.zip",
+    // )];
+    let program_inputs_path = Path::new("./examples/fibonacci_input.json");
+    let program_inputs_str = std::fs::read_to_string(program_inputs_path)?;
+    let program_inputs =
+        serde_json::from_str::<HashMap<String, serde_json::Value>>(&program_inputs_str)?;
+    let program_inputs = vec![program_inputs];
     let tasks = make_bootloader_tasks(Some(&program_paths), Some(&program_inputs), None)?;
+    // let tasks = make_bootloader_tasks(None, None, Some(&pie_paths))?;
 
     let mut runner = cairo_run_bootloader_in_proof_mode(&bootloader_program, tasks)?;
 
