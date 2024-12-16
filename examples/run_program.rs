@@ -62,6 +62,7 @@ fn cairo_run_bootloader_in_proof_mode(
         secure_run: None,
         disable_trace_padding: false,
         allow_missing_builtins: None,
+        ..Default::default()
     };
 
     // Build the bootloader input
