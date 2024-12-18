@@ -670,14 +670,12 @@ mod tests {
             .expect("Loading example program failed unexpectedly")
     }
 
-    /*
     #[fixture]
     fn fibonacci_with_hint() -> Program {
-        let program_content = include_bytes!("../../resources/fibonacci_with_hint.json").to_vec();
+        let program_content = include_bytes!("../../examples/fibonacci_with_hint.json").to_vec();
         Program::from_bytes(&program_content, Some("main"))
             .expect("Loading example program failed unexpectedly")
     }
-    */
 
     #[rstest]
     fn test_load_program(fibonacci: Program) {
@@ -761,7 +759,6 @@ mod tests {
         );
     }
 
-    /*
     #[rstest]
     fn test_call_task_with_hint(fibonacci_with_hint: Program) {
         let mut vm = vm!();
@@ -797,10 +794,14 @@ mod tests {
         let hint_code = "ids.fibonacci_claim_index = program_input['fibonacci_claim_index']";
         let hint = fibonacci_with_hint.get_hints().get(0).unwrap();
         let references = fibonacci_with_hint.get_references();
+        let ap_tracking = ApTracking {
+            group: 2,
+            offset: 1,
+        };
         let compiled_hint = hint_processor
             .compile_hint(
                 hint_code,
-                &ApTracking::default(),
+                &ap_tracking,
                 &hint.flow_tracking_data.reference_ids,
                 &references,
             )
@@ -825,7 +826,6 @@ mod tests {
         assert_eq!(actual_hint.ap_tracking, compiled_hint.ap_tracking);
         assert_eq!(actual_hint.ids_data, compiled_hint.ids_data);
     }
-    */
 
     /// Creates a fake Program struct to act as a placeholder for the `BOOTLOADER_PROGRAM` variable.
     /// These other options have been considered:
