@@ -1,4 +1,5 @@
 use cairo_vm::types::builtin_name::BuiltinName;
+use std::collections::HashMap;
 use std::fs::File;
 use std::path::Path;
 
@@ -390,12 +391,19 @@ pub fn get_task_fact_topology(
                 .cairo_pie
                 .additional_data
                 .0
-                .get(&BuiltinName::output)
-                .ok_or(FactTopologyError::CairoPieHasNoOutputBuiltinData)?;
-            match additional_data {
-                BuiltinAdditionalData::Output(output_data) => output_data,
-                _ => {
-                    return Err(FactTopologyError::CairoPieHasNoOutputBuiltinData);
+                .get(&BuiltinName::output);
+            if let Some(additional_data) = additional_data {
+                match additional_data {
+                    BuiltinAdditionalData::Output(output_data) => output_data,
+                    _ => &OutputBuiltinAdditionalData {
+                        pages: HashMap::new(),
+                        attributes: HashMap::new(),
+                    },
+                }
+            } else {
+                &OutputBuiltinAdditionalData {
+                    pages: HashMap::new(),
+                    attributes: HashMap::new(),
                 }
             }
         };
