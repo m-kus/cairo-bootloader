@@ -5,9 +5,7 @@ use std::rc::Rc;
 
 use cairo_vm::cairo_run::{cairo_run_program_with_initial_scope, CairoRunConfig};
 use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintFunc;
-use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::{
-    get_ptr_from_var_name, insert_value_from_var_name,
-};
+use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::insert_value_from_var_name;
 use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::types::layout_name::LayoutName;
 use cairo_vm::types::program::Program;
@@ -55,8 +53,8 @@ fn cairo_run_bootloader_in_proof_mode(
 
     let cairo_run_config = CairoRunConfig {
         entrypoint: "main",
-        trace_enabled: false,
-        relocate_mem: false,
+        trace_enabled: true,
+        relocate_mem: true,
         layout: LayoutName::starknet_with_keccak,
         proof_mode: true,
         secure_run: None,
@@ -78,6 +76,7 @@ fn cairo_run_bootloader_in_proof_mode(
             supported_cairo_verifier_program_hashes: vec![],
         },
         packed_outputs: vec![PackedOutput::Plain(vec![]); n_tasks],
+        ignore_fact_topologies: false,
     };
 
     // Note: the method used to set the bootloader input depends on
@@ -96,17 +95,18 @@ fn cairo_run_bootloader_in_proof_mode(
 
 fn main() -> Result<(), Box<dyn Error>> {
     let bootloader_program = load_bootloader()?;
-    let program_paths = vec![Path::new("./examples/fibonacci_with_hint.json")];
+    // let program_paths = vec![Path::new("./examples/fibonacci_with_hint.json")];
     // let pie_paths = vec![Path::new(
     //     "./dependencies/test-programs/bootloader/pies/fibonacci/cairo_pie.zip",
     // )];
-    let program_inputs_path = Path::new("./examples/fibonacci_input.json");
-    let program_inputs_str = std::fs::read_to_string(program_inputs_path)?;
-    let program_inputs =
-        serde_json::from_str::<HashMap<String, serde_json::Value>>(&program_inputs_str)?;
-    let program_inputs = vec![program_inputs];
-    let tasks = make_bootloader_tasks(Some(&program_paths), Some(&program_inputs), None)?;
-    // let tasks = make_bootloader_tasks(None, None, Some(&pie_paths))?;
+    let pie_paths = vec![Path::new("./examples/example.zip")];
+    // let program_inputs_path = Path::new("./examples/fibonacci_input.json");
+    // let program_inputs_str = std::fs::read_to_string(program_inputs_path)?;
+    // let program_inputs =
+    //     serde_json::from_str::<HashMap<String, serde_json::Value>>(&program_inputs_str)?;
+    // let program_inputs = vec![program_inputs];
+    // let tasks = make_bootloader_tasks(Some(&program_paths), Some(&program_inputs), None)?;
+    let tasks = make_bootloader_tasks(None, None, Some(&pie_paths))?;
 
     let mut runner = cairo_run_bootloader_in_proof_mode(&bootloader_program, tasks)?;
 
