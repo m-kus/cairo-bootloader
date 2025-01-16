@@ -320,13 +320,17 @@ pub fn compute_and_configure_fact_topologies(
 
     let plain_fact_topologies = compute_fact_topologies(&packed_outputs, &fact_topologies)
         .map_err(Into::<HintError>::into)?;
-
-    configure_fact_topologies(&plain_fact_topologies, &mut output_start, output_builtin)
-        .map_err(Into::<HintError>::into)?;
+    let bootloader_input: BootloaderInput = exec_scopes.get(vars::BOOTLOADER_INPUT)?;
+    configure_fact_topologies(
+        &plain_fact_topologies,
+        &mut output_start,
+        output_builtin,
+        bootloader_input.ignore_fact_topologies,
+    )
+    .map_err(Into::<HintError>::into)?;
 
     exec_scopes.insert_value(vars::OUTPUT_START, output_start);
 
-    let bootloader_input: &BootloaderInput = exec_scopes.get_ref(vars::BOOTLOADER_INPUT)?;
     if let Some(path) = &bootloader_input
         .simple_bootloader_input
         .fact_topologies_path
@@ -478,6 +482,7 @@ mod tests {
                 ],
             },
             packed_outputs: vec![],
+            ignore_fact_topologies: false,
         }
     }
 
@@ -809,6 +814,7 @@ mod tests {
                 supported_cairo_verifier_program_hashes: Default::default(),
             },
             packed_outputs: packed_outputs.clone(),
+            ignore_fact_topologies: false,
         };
 
         let mut vm = vm!();

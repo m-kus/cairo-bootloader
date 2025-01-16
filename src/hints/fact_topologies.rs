@@ -211,24 +211,35 @@ pub fn configure_fact_topologies<FT: AsRef<FactTopology>>(
     plain_fact_topologies: &[FT],
     output_start: &mut Relocatable,
     output_builtin: &mut OutputBuiltinRunner,
+    use_only_memory_page_0: bool,
 ) -> Result<(), FactTopologyError> {
-    // Each task may use a few memory pages. Start from page 1 (as page 0 is reserved for the
-    // bootloader program and arguments).
-    let mut current_page_id: usize = 0;
-    for fact_topology in plain_fact_topologies {
-        // Skip bootloader output for each task
-        *output_start = (*output_start + 2usize)?;
+    if use_only_memory_page_0 {
+        // don't add pages to the output builtin, but update output_start to avoid memory overlap
+        for fact_topology in plain_fact_topologies {
+            // Skip bootloader output for each task
+            *output_start = (*output_start + 2)?;
 
-        current_page_id += add_consecutive_output_pages(
-            fact_topology.as_ref(),
-            output_builtin,
-            current_page_id,
-            *output_start,
-        )?;
-        let total_page_sizes: usize = fact_topology.as_ref().page_sizes.iter().sum();
-        *output_start = (*output_start + total_page_sizes)?;
+            let total_page_sizes: usize = fact_topology.as_ref().page_sizes.iter().sum();
+            *output_start = (*output_start + total_page_sizes)?;
+        }
+    } else {
+        // Each task may use a few memory pages. Start from page 1 (as page 0 is reserved for the
+        // bootloader program and arguments).
+        let mut current_page_id: usize = 1;
+        for fact_topology in plain_fact_topologies {
+            // Skip bootloader output for each task
+            *output_start = (*output_start + 2usize)?;
+
+            current_page_id += add_consecutive_output_pages(
+                fact_topology.as_ref(),
+                output_builtin,
+                current_page_id,
+                *output_start,
+            )?;
+            let total_page_sizes: usize = fact_topology.as_ref().page_sizes.iter().sum();
+            *output_start = (*output_start + total_page_sizes)?;
+        }
     }
-
     Ok(())
 }
 
@@ -541,6 +552,35 @@ mod tests {
     }
 
     #[rstest]
+    fn test_ignore_fact_topologies(fact_topologies: Vec<FactTopology>) {
+        let mut output_builtin = OutputBuiltinRunner::new(true);
+        let mut output_start = Relocatable {
+            segment_index: output_builtin.base() as isize,
+            offset: 10,
+        };
+
+        let result = configure_fact_topologies(
+            &fact_topologies,
+            &mut output_start,
+            &mut output_builtin,
+            true,
+        )
+        .expect("Configuring fact topologies failed unexpectedly");
+        assert_eq!(result, ());
+
+        let output_builtin_state = output_builtin.get_state();
+        assert_eq!(output_builtin_state.base, 0);
+        assert!(output_builtin_state.pages.is_empty());
+        assert_eq!(
+            output_start,
+            Relocatable {
+                segment_index: 0,
+                offset: 23
+            }
+        );
+    }
+
+    #[rstest]
     fn test_configure_fact_topologies(fact_topologies: Vec<FactTopology>) {
         let mut output_builtin = OutputBuiltinRunner::new(true);
         let mut output_start = Relocatable {
@@ -548,9 +588,13 @@ mod tests {
             offset: 10,
         };
 
-        let result =
-            configure_fact_topologies(&fact_topologies, &mut output_start, &mut output_builtin)
-                .expect("Configuring fact topologies failed unexpectedly");
+        let result = configure_fact_topologies(
+            &fact_topologies,
+            &mut output_start,
+            &mut output_builtin,
+            false,
+        )
+        .expect("Configuring fact topologies failed unexpectedly");
 
         assert_eq!(result, ());
 

@@ -16,7 +16,6 @@ use cairo_vm::vm::vm_core::VirtualMachine;
 use cairo_vm::Felt252;
 use num_traits::ToPrimitive;
 use starknet_types_core::felt::NonZeroFelt;
-use std::any::Any;
 use std::collections::HashMap;
 /// Implements
 /// n_tasks = len(simple_bootloader_input.tasks)
@@ -172,6 +171,7 @@ pub fn set_current_task(
 
 #[cfg(test)]
 mod tests {
+    use std::any::Any;
     use std::collections::HashMap;
 
     use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::{

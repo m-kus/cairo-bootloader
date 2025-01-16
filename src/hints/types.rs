@@ -141,4 +141,9 @@ pub struct BootloaderInput {
     pub simple_bootloader_input: SimpleBootloaderInput,
     pub bootloader_config: BootloaderConfig,
     pub packed_outputs: Vec<PackedOutput>,
+    // Option not present in the original Cairo 0 hint implementation.
+    // In the original implementation, all the outputs of the tasks are written to memory page 1 and onwards,
+    // reserving page 0 for the bootloader program and arguments.
+    // Setting this to true will ignore the fact_topologies and add all outputs of tasks to page 0.
+    pub ignore_fact_topologies: bool,
 }
