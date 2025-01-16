@@ -214,7 +214,7 @@ pub fn configure_fact_topologies<FT: AsRef<FactTopology>>(
 ) -> Result<(), FactTopologyError> {
     // Each task may use a few memory pages. Start from page 1 (as page 0 is reserved for the
     // bootloader program and arguments).
-    let mut current_page_id: usize = 1;
+    let mut current_page_id: usize = 0;
     for fact_topology in plain_fact_topologies {
         // Skip bootloader output for each task
         *output_start = (*output_start + 2usize)?;
