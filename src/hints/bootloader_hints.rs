@@ -488,7 +488,7 @@ mod tests {
 
     #[rstest]
     fn test_prepare_simple_bootloader_output_segment(bootloader_input: BootloaderInput) {
-        let mut vm = VirtualMachine::new(false);
+        let mut vm = VirtualMachine::new(false, false);
         vm.add_memory_segment();
         vm.add_memory_segment();
         vm.set_fp(1);

@@ -218,7 +218,7 @@ mod tests {
             BuiltinName::pedersen,
         ];
 
-        let mut vm = VirtualMachine::new(false);
+        let mut vm = VirtualMachine::new(false, false);
         let builtin_list_ptr = vm.add_memory_segment();
 
         let builtins_offset = 4;
@@ -277,7 +277,7 @@ mod tests {
     fn test_load_header(fibonacci: Program) {
         let program = fibonacci.get_stripped_program().unwrap();
 
-        let mut vm = VirtualMachine::new(false);
+        let mut vm = VirtualMachine::new(false, false);
         add_segments!(vm, 2);
         let mut segments = MemorySegmentManager::new();
         let base_address = segments.add();
@@ -314,7 +314,7 @@ mod tests {
     fn test_load_program(fibonacci: Program) {
         let program = fibonacci.get_stripped_program().unwrap();
 
-        let mut vm = VirtualMachine::new(false);
+        let mut vm = VirtualMachine::new(false, false);
         add_segments!(vm, 2);
         let mut segments = MemorySegmentManager::new();
         let base_address = segments.add();

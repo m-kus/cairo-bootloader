@@ -1,7 +1,7 @@
 #[macro_export]
 macro_rules! vm {
     () => {
-        VirtualMachine::new(false) // Default to false if no argument is provided
+        VirtualMachine::new(false, false) // Default to false if no argument is provided
     };
 }
 

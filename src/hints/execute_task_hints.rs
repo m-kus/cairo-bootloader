@@ -521,6 +521,7 @@ fn vm_load_program(
                 &hint.flow_tracking_data.ap_tracking,
                 &hint.flow_tracking_data.reference_ids,
                 &task_program_references,
+                &[],
             )?;
             task_program_compiled_hints
                 .entry(new_hint_pc)
@@ -804,6 +805,7 @@ mod tests {
                 &ap_tracking,
                 &hint.flow_tracking_data.reference_ids,
                 &references,
+                &[],
             )
             .expect("Failed to compile hint")
             .downcast::<HintProcessorData>()
@@ -846,6 +848,7 @@ mod tests {
                         members: None,
                         cairo_type: None,
                         size: None,
+                        destination: None,
                     },
                 )
             })

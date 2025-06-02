@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 cairo-vm = { git = "https://github.com/zksecurity/cairo-vm.git", features = [
     "extensive_hints",
-], rev = "ac8b81b79f65f5017fe0929bf4025be4a0e9c73c" }
+], rev = "098e0f9cd3525922403f810a59653fc73d6f22c7" }
 num-traits = "0.2.19"
 serde = { version = "1.0.202", features = ["derive"] }
 serde_json = "1.0.117"
