@@ -521,7 +521,6 @@ fn vm_load_program(
                 &hint.flow_tracking_data.ap_tracking,
                 &hint.flow_tracking_data.reference_ids,
                 &task_program_references,
-                &[],
             )?;
             task_program_compiled_hints
                 .entry(new_hint_pc)
@@ -567,7 +566,7 @@ mod util {
     ) -> Result<Option<OutputBuiltinState>, HintError> {
         let output_state = if let Some(_) = task.as_any().downcast_ref::<RunProgramTask>() {
             let output_state = output_builtin.get_state();
-            output_builtin.new_state(output_ptr.segment_index as usize, true);
+            output_builtin.new_state(output_ptr.segment_index as usize, 0, true);
             Ok(Some(output_state))
         } else if let Some(_) = task.as_any().downcast_ref::<CairoPieTask>() {
             Ok(None)
@@ -805,7 +804,6 @@ mod tests {
                 &ap_tracking,
                 &hint.flow_tracking_data.reference_ids,
                 &references,
-                &[],
             )
             .expect("Failed to compile hint")
             .downcast::<HintProcessorData>()
@@ -848,7 +846,6 @@ mod tests {
                         members: None,
                         cairo_type: None,
                         size: None,
-                        destination: None,
                     },
                 )
             })
@@ -943,6 +940,7 @@ mod tests {
             ]),
             attributes: HashMap::from([("gps_fact_topology".to_string(), tree_structure.clone())]),
             base: 0,
+            base_offset: 0,
         };
         let mut output_builtin = OutputBuiltinRunner::new(true);
         output_builtin.set_state(program_output_data.clone());
@@ -963,6 +961,7 @@ mod tests {
             pages: HashMap::new(),
             attributes: HashMap::new(),
             base: 0,
+            base_offset: 0,
         };
         exec_scopes.insert_value(vars::OUTPUT_RUNNER_DATA, Some(output_runner_data.clone()));
         exec_scopes.insert_value(vars::TASK, task);
