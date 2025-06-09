@@ -5,7 +5,6 @@ pub use crate::hints::*;
 
 const BOOTLOADER_V0_13_0: &[u8] = include_bytes!("../resources/bootloader-0.13.0.json");
 const BOOTLOADER_V0_13_1: &[u8] = include_bytes!("../resources/bootloader-0.13.1.json");
-const BOOTLOADER_V0_14_1: &[u8] = include_bytes!("../resources/bootloader-0.14.1.json");
 
 /// Loads the bootloader and returns it as a Cairo VM `Program` object.
 pub fn load_bootloader() -> Result<Program, ProgramError> {

@@ -8,20 +8,20 @@ CAIRO_VERSION="0.13.1"
 
 CAIRO_LANG_DIR=$(readlink -f "${SCRIPT_DIR}/../dependencies/cairo-lang")
 
-if ! command -v cairo-compile >/dev/null; then
-    echo "please start cairo ($CAIRO_VERSION) dev environment"
-    exit 1
-fi
+# if ! command -v cairo-compile >/dev/null; then
+#     echo "please start cairo ($CAIRO_VERSION) dev environment"
+#     exit 1
+# fi
 
-echo -e "\ninitializing cairo-lang ($CAIRO_VERSION)...\n"
-git submodule update --init
+# echo -e "\ninitializing cairo-lang ($CAIRO_VERSION)...\n"
+# git submodule update --init
 
-FETCHED_CAIRO_VER="$(cat "${CAIRO_LANG_DIR}/src/starkware/cairo/lang/VERSION")"
+# FETCHED_CAIRO_VER="$(cat "${CAIRO_LANG_DIR}/src/starkware/cairo/lang/VERSION")"
 
-if [ "$CAIRO_VERSION" != "$FETCHED_CAIRO_VER" ]; then
-    echo "incorrect cairo ver($FETCHED_CAIRO_VER) expecting $CAIRO_VERSION"
-    exit 1
-fi
+# if [ "$CAIRO_VERSION" != "$FETCHED_CAIRO_VER" ]; then
+#     echo "incorrect cairo ver($FETCHED_CAIRO_VER) expecting $CAIRO_VERSION"
+#     exit 1
+# fi
 
 OUTPUT_DIR="$(readlink -f "${SCRIPT_DIR}/../resources")"
 mkdir -p "${OUTPUT_DIR}"
