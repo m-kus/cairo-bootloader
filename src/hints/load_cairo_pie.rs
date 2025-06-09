@@ -291,7 +291,7 @@ pub(crate) fn load_cairo_pie(
         ret_pc,
     )?;
 
-    relocate_builtin_additional_data(cairo_pie, vm, &relocation_table)?;
+    //relocate_builtin_additional_data(cairo_pie, vm, &relocation_table)?;
     relocate_cairo_pie_memory(cairo_pie, vm, &relocation_table)?;
 
     Ok(())

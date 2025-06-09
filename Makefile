@@ -6,8 +6,12 @@ install-stwo:
 		--rev c3effb7a5b6f212bed14361618562a0a1007f86b \
 		adapted_stwo
 
+compile:
+	./scripts/compile-bootloader.sh
+
 execute:
 	cargo run --release
+
 prove:
 	adapted_stwo \
 		--priv_json examples/output/priv.json \

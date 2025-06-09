@@ -4,7 +4,7 @@
 # to recompile the bootloader when changing the version of cairo-lang.
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-CAIRO_VERSION="0.13.0"
+CAIRO_VERSION="0.13.1"
 
 CAIRO_LANG_DIR=$(readlink -f "${SCRIPT_DIR}/../dependencies/cairo-lang")
 
