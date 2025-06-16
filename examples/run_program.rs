@@ -169,7 +169,7 @@ pub fn prover_input_from_runner<'r>(runner: &'r CairoRunner, output_dir: &Path) 
 fn main() -> Result<(), Box<dyn Error>> {
     let bootloader_program = load_bootloader()?;
     
-    let pie_paths = vec![Path::new("./examples/sha2.zip")];
+    let pie_paths = vec![Path::new("./examples/raito_1.zip")];
     let tasks = make_bootloader_tasks(None, None, Some(&pie_paths))?;
 
     let mut runner = cairo_run_bootloader_in_proof_mode(&bootloader_program, tasks)?;

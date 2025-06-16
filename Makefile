@@ -18,4 +18,5 @@ prove:
 		--pub_json examples/output/pub.json \
 		--params_json prover_params.json \
 		--proof_path examples/output/proof.json \
+		--proof-format cairo-serde \
 		--verify
