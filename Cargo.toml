@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "execute"
-path = "examples/run_program.rs"
+name = "stwo-bootloader"
+path = "src/main.rs"
 
 [dependencies]
 cairo-vm = { git = "https://github.com/m-kus/cairo-vm.git", features = [
@@ -21,6 +21,7 @@ thiserror-no-std = "2.0.2"
 bincode = { version = "2.0.0-rc.3", default-features = false, features = [
     "serde",
 ] }
+clap = { version = "4.5", features = ["derive"] }
 
 [dev-dependencies]
 assert_matches = "1.5.0"

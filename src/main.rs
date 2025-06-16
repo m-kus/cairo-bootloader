@@ -1,15 +1,12 @@
-use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::rc::Rc;
 use bincode::enc::write::Writer;
+use clap::Parser;
 
 use cairo_vm::air_public_input::PublicInput;
 use cairo_vm::cairo_run::{cairo_run_program_with_initial_scope, write_encoded_memory, write_encoded_trace, CairoRunConfig};
-use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::HintFunc;
-use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::insert_value_from_var_name;
 use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::types::layout_name::LayoutName;
 use cairo_vm::types::program::Program;
@@ -31,31 +28,6 @@ fn cairo_run_bootloader_in_proof_mode(
     tasks: Vec<TaskSpec>,
 ) -> Result<CairoRunner, CairoRunError> {
     let mut hint_processor = BootloaderHintProcessor::new();
-    hint_processor.add_hint(
-        "ids.fibonacci_claim_index = program_input['fibonacci_claim_index']".to_string(),
-        Rc::new(HintFunc(Box::new(
-            |vm, exec_scopes, ids_data, ap_tracking, _constants| {
-                let program_input: HashMap<String, serde_json::Value> = exec_scopes
-                    .get::<HashMap<String, serde_json::Value>>("program_input")
-                    .unwrap()
-                    .clone();
-                let fibonacci_claim_index: Felt252 = program_input
-                    .get("fibonacci_claim_index")
-                    .unwrap()
-                    .as_u64()
-                    .unwrap()
-                    .into();
-                insert_value_from_var_name(
-                    "fibonacci_claim_index",
-                    fibonacci_claim_index,
-                    vm,
-                    ids_data,
-                    ap_tracking,
-                )?;
-                Ok(())
-            },
-        ))),
-    );
 
     let cairo_run_config = CairoRunConfig {
         entrypoint: "main",
@@ -166,10 +138,23 @@ pub fn prover_input_from_runner<'r>(runner: &'r CairoRunner, output_dir: &Path) 
     (private_input, public_input)
 }
 
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Paths to the PIE files (*.zip)
+    #[arg(short, long, num_args = 1..)]
+    pie: Vec<PathBuf>,
+
+    /// Output directory for the generated files
+    #[arg(short, long)]
+    output_path: PathBuf,
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
+    let args = Args::parse();
     let bootloader_program = load_bootloader()?;
     
-    let pie_paths = vec![Path::new("./examples/raito_1.zip")];
+    let pie_paths: Vec<&Path> = args.pie.iter().map(|p| p.as_ref()).collect();
     let tasks = make_bootloader_tasks(None, None, Some(&pie_paths))?;
 
     let mut runner = cairo_run_bootloader_in_proof_mode(&bootloader_program, tasks)?;
@@ -178,14 +163,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     runner.vm.write_output(&mut output_buffer)?;
     print!("{output_buffer}");
 
-    let output_dir = Path::new("./examples/output");
-    std::fs::create_dir_all(output_dir).unwrap();
-    let (private_input, public_input) = prover_input_from_runner(&runner, output_dir);
+    std::fs::create_dir_all(&args.output_path).unwrap();
+    let (private_input, public_input) = prover_input_from_runner(&runner, &args.output_path);
 
     let priv_json = serde_json::to_string(&private_input).unwrap();
     let pub_json = serde_json::to_string(&public_input).unwrap();
-    std::fs::write(output_dir.join("priv.json"), priv_json).unwrap();
-    std::fs::write(output_dir.join("pub.json"), pub_json).unwrap();
+    std::fs::write(args.output_path.join("priv.json"), priv_json).unwrap();
+    std::fs::write(args.output_path.join("pub.json"), pub_json).unwrap();
 
     Ok(())
 }
