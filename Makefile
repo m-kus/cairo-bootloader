@@ -21,7 +21,7 @@ compile:
 		--proof_mode
 
 execute:
-	cargo run --release -- --pie examples/raito_1.zip --output-path examples/output
+	cargo run --release -- --pie examples/assumevalid.zip --output-path examples/output
 
 prove:
 	adapted_stwo \
