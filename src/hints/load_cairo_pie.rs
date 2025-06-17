@@ -315,7 +315,7 @@ mod tests {
     fn test_relocate_address() {
         let mut relocation_table = RelocationTable::new();
         let relocation = Relocatable::from((2, 5));
-        relocation_table.insert(1, relocation.clone()).unwrap();
+        relocation_table.insert(1, relocation).unwrap();
 
         let address = Relocatable::from((1, 27));
         let expected_address = Relocatable::from((2, 32));

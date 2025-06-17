@@ -1,12 +1,14 @@
+use bincode::enc::write::Writer;
+use clap::Parser;
 use std::error::Error;
 use std::fs::File;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use bincode::enc::write::Writer;
-use clap::Parser;
 
 use cairo_vm::air_public_input::PublicInput;
-use cairo_vm::cairo_run::{cairo_run_program_with_initial_scope, write_encoded_memory, write_encoded_trace, CairoRunConfig};
+use cairo_vm::cairo_run::{
+    cairo_run_program_with_initial_scope, write_encoded_memory, write_encoded_trace, CairoRunConfig,
+};
 use cairo_vm::types::exec_scope::ExecutionScopes;
 use cairo_vm::types::layout_name::LayoutName;
 use cairo_vm::types::program::Program;
@@ -63,7 +65,7 @@ fn cairo_run_bootloader_in_proof_mode(
 
     // Run the bootloader
     cairo_run_program_with_initial_scope(
-        &bootloader_program,
+        bootloader_program,
         &cairo_run_config,
         &mut hint_processor,
         exec_scopes,
@@ -105,7 +107,10 @@ impl FileWriter {
     }
 }
 
-pub fn prover_input_from_runner<'r>(runner: &'r CairoRunner, output_dir: &Path) -> (PrivateInput, PublicInput<'r>) {
+pub fn prover_input_from_runner<'r>(
+    runner: &'r CairoRunner,
+    output_dir: &Path,
+) -> (PrivateInput, PublicInput<'r>) {
     let public_input = runner.get_air_public_input().unwrap();
     let trace = runner
         .relocated_trace
@@ -118,17 +123,21 @@ pub fn prover_input_from_runner<'r>(runner: &'r CairoRunner, output_dir: &Path) 
             pc: x.pc,
         })
         .collect::<Vec<_>>();
-   
+
     let trace_path = output_dir.join("trace");
     let trace_file = File::create(&trace_path).unwrap();
-    let mut trace_writer =
-            FileWriter::new(std::io::BufWriter::with_capacity(3 * 1024 * 1024, trace_file));
+    let mut trace_writer = FileWriter::new(std::io::BufWriter::with_capacity(
+        3 * 1024 * 1024,
+        trace_file,
+    ));
     write_encoded_trace(&trace, &mut trace_writer).unwrap();
 
     let memory_path = output_dir.join("memory");
     let memory_file = File::create(&memory_path).unwrap();
-    let mut memory_writer =
-            FileWriter::new(std::io::BufWriter::with_capacity(5 * 1024 * 1024, memory_file));
+    let mut memory_writer = FileWriter::new(std::io::BufWriter::with_capacity(
+        5 * 1024 * 1024,
+        memory_file,
+    ));
     write_encoded_memory(&runner.relocated_memory, &mut memory_writer).unwrap();
 
     let private_input = PrivateInput {
@@ -153,7 +162,7 @@ struct Args {
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
     let bootloader_program = load_bootloader()?;
-    
+
     let pie_paths: Vec<&Path> = args.pie.iter().map(|p| p.as_ref()).collect();
     let tasks = make_bootloader_tasks(None, None, Some(&pie_paths))?;
 

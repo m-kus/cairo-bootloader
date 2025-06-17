@@ -2,7 +2,6 @@ use crate::{CairoPieTask, RunProgramTask, TaskSpec};
 use cairo_vm::types::errors::program_errors::ProgramError;
 use cairo_vm::types::program::Program;
 use cairo_vm::vm::runners::cairo_pie::CairoPie;
-use cairo_vm::Felt252;
 use std::collections::HashMap;
 use std::path::Path;
 

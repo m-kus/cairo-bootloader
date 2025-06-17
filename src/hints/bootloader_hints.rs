@@ -118,10 +118,10 @@ fn gen_arg(vm: &mut VirtualMachine, args: &Vec<Box<dyn Any>>) -> Result<Relocata
 
     for arg in args {
         if let Some(value) = arg.downcast_ref::<MaybeRelocatable>() {
-            ptr = vm.segments.load_data(ptr, &vec![value.clone()])?;
+            ptr = vm.segments.load_data(ptr, &[value.clone()])?;
         } else if let Some(vector) = arg.downcast_ref::<Vec<Box<dyn Any>>>() {
             let nested_base = gen_arg(vm, vector)?;
-            ptr = vm.segments.load_data(ptr, &vec![nested_base.into()])?;
+            ptr = vm.segments.load_data(ptr, &[nested_base.into()])?;
         } else {
             return Err(MemoryError::GenArgInvalidType);
         }
@@ -647,7 +647,7 @@ mod tests {
         match programs_segment {
             MaybeRelocatable::RelocatableValue(relocatable) => {
                 let program_hashes: Vec<Felt252> = vm
-                    .get_integer_range(relocatable.clone(), expected_nb_programs)
+                    .get_integer_range(*relocatable, expected_nb_programs)
                     .unwrap()
                     .iter()
                     .map(|cow| cow.clone().into_owned())
@@ -1017,7 +1017,7 @@ mod tests {
         };
         let _ = insert_value_from_var_name(
             vars::PROGRAM_ADDRESS,
-            ptr.clone(),
+            ptr,
             &mut vm,
             &ids_data,
             &ap_tracking,
@@ -1046,7 +1046,7 @@ mod tests {
             Err(HintError::CustomHint(e)) => {
                 assert!(expect_fail);
                 assert_eq!(e.as_ref(), "program address is incorrect");
-                ()
+                
             }
             _ => panic!("result not recognized"),
         }

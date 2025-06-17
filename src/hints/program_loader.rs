@@ -198,13 +198,8 @@ mod tests {
         for (builtin, felt) in std::iter::zip(vec!["bitwise", "output", "pedersen"], builtin_felts)
         {
             let builtin_from_felt = String::from_utf8(felt.into_owned().to_bytes_be().to_vec())
-                .expect(
-                    format!(
-                        "Could not decode builtin from memory (expected {})",
-                        builtin
-                    )
-                    .as_ref(),
-                );
+                .unwrap_or_else(|_| panic!("Could not decode builtin from memory (expected {})",
+                        builtin));
             // Compare the last N characters, builtin_from_felt is padded left with zeroes
             assert_eq!(&builtin_from_felt[32 - builtin.len()..32], builtin);
         }
@@ -230,7 +225,7 @@ mod tests {
 
         check_loaded_builtins(
             &vm,
-            &vec!["bitwise", "output", "pedersen"],
+            &["bitwise", "output", "pedersen"],
             builtin_list_ptr,
         );
     }
@@ -290,10 +285,10 @@ mod tests {
             .load_header(base_address, &program, Some(bootloader_version))
             .expect("Failed to load program header in memory");
 
-        check_loaded_header(&vm, base_address.clone(), &program, bootloader_version);
+        check_loaded_header(&vm, base_address, &program, bootloader_version);
 
         let builtin_list_ptr = (base_address + builtins_offset).unwrap();
-        check_loaded_builtins(&vm, &vec![], builtin_list_ptr);
+        check_loaded_builtins(&vm, &[], builtin_list_ptr);
     }
 
     fn check_loaded_program(
@@ -335,9 +330,9 @@ mod tests {
 
         check_loaded_program(&vm, loaded_program.code_address, &program);
 
-        check_loaded_header(&vm, base_address.clone(), &program, bootloader_version);
+        check_loaded_header(&vm, base_address, &program, bootloader_version);
 
         let builtin_list_ptr = (base_address + builtins_offset).unwrap();
-        check_loaded_builtins(&vm, &vec![], builtin_list_ptr);
+        check_loaded_builtins(&vm, &[], builtin_list_ptr);
     }
 }
