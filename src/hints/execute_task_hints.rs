@@ -835,8 +835,6 @@ mod tests {
     ///   making casting back to the trait impossible.
     /// * using an enum requires defining test-only variants.
     fn mock_program_identifiers(symbols: HashMap<String, usize>) -> ProgramIdentifiers {
-        
-
         symbols
             .into_iter()
             .map(|(name, pc)| {

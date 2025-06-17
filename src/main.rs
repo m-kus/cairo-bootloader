@@ -171,6 +171,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut output_buffer = "Program Output:\n".to_string();
     runner.vm.write_output(&mut output_buffer)?;
     print!("{output_buffer}");
+    println!("--------------------------------");
 
     std::fs::create_dir_all(&args.output_path).unwrap();
     let (private_input, public_input) = prover_input_from_runner(&runner, &args.output_path);
@@ -179,6 +180,20 @@ fn main() -> Result<(), Box<dyn Error>> {
     let pub_json = serde_json::to_string(&public_input).unwrap();
     std::fs::write(args.output_path.join("priv.json"), priv_json).unwrap();
     std::fs::write(args.output_path.join("pub.json"), pub_json).unwrap();
+
+    let resources = runner
+        .get_execution_resources()
+        .expect("failed to get execution resources, but the run was successful");
+
+    let builtin_instance_counter = resources
+        .builtin_instance_counter
+        .into_iter()
+        .map(|(k, v)| (k.to_string(), v))
+        .collect::<Vec<_>>();
+
+    println!("n_steps: {}", resources.n_steps);
+    println!("n_memory_holes: {}", resources.n_memory_holes);
+    println!("builtin_instance_counter: {:#?}", builtin_instance_counter);
 
     Ok(())
 }

@@ -34,7 +34,7 @@ pub fn make_bootloader_tasks(
                 tasks.push(TaskSpec::RunProgram(RunProgramTask {
                     program,
                     program_input: program_input.clone(),
-                    use_poseidon: true,
+                    use_poseidon: false,
                 }));
                 Ok(())
             },
@@ -47,7 +47,7 @@ pub fn make_bootloader_tasks(
                 let cairo_pie = CairoPie::read_zip_file(pie).map_err(BootloaderTaskError::Pie)?;
                 tasks.push(TaskSpec::CairoPieTask(CairoPieTask {
                     cairo_pie,
-                    use_poseidon: true,
+                    use_poseidon: false,
                 }));
                 Ok(())
             })?;

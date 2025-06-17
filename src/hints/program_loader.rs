@@ -198,8 +198,12 @@ mod tests {
         for (builtin, felt) in std::iter::zip(vec!["bitwise", "output", "pedersen"], builtin_felts)
         {
             let builtin_from_felt = String::from_utf8(felt.into_owned().to_bytes_be().to_vec())
-                .unwrap_or_else(|_| panic!("Could not decode builtin from memory (expected {})",
-                        builtin));
+                .unwrap_or_else(|_| {
+                    panic!(
+                        "Could not decode builtin from memory (expected {})",
+                        builtin
+                    )
+                });
             // Compare the last N characters, builtin_from_felt is padded left with zeroes
             assert_eq!(&builtin_from_felt[32 - builtin.len()..32], builtin);
         }
@@ -223,11 +227,7 @@ mod tests {
             .load_builtins(builtin_list_ptr, &builtins)
             .expect("Failed to load builtins in memory");
 
-        check_loaded_builtins(
-            &vm,
-            &["bitwise", "output", "pedersen"],
-            builtin_list_ptr,
-        );
+        check_loaded_builtins(&vm, &["bitwise", "output", "pedersen"], builtin_list_ptr);
     }
 
     #[fixture]

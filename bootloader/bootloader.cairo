@@ -90,9 +90,6 @@ func main{
         )
     %}
 
-    // The bootloader config appears at the beginning of the output.
-    serialize_bootloader_config(bootloader_config=bootloader_config);
-
     // Increment output_ptr to save place for n_total_tasks.
     local output_n_total_tasks_ptr: felt* = output_ptr;
     let output_ptr = output_ptr + 1;
@@ -212,26 +209,6 @@ func parse_tasks{
 
     // Call recursively for handling the other tasks.
     return parse_tasks(bootloader_config=bootloader_config, n_subtasks=n_subtasks - 1);
-}
-
-// Serializes the bootloader config.
-//
-// Arguments:
-// bootloader_config - A pointer to the bootloader config.
-func serialize_bootloader_config{output_ptr: felt*, pedersen_ptr: HashBuiltin*}(
-    bootloader_config: BootloaderConfig*
-) {
-    assert [output_ptr] = bootloader_config.simple_bootloader_program_hash;
-
-    // Compute the hash of the supported Cairo verifiers.
-    let (supported_cairo_verifiers_hash) = hash_felts{hash_ptr=pedersen_ptr}(
-        data=bootloader_config.supported_cairo_verifier_program_hashes,
-        length=bootloader_config.supported_cairo_verifier_program_hashes_len,
-    );
-
-    assert [output_ptr + 1] = supported_cairo_verifiers_hash;
-    let output_ptr = output_ptr + 2;
-    return ();
 }
 
 // Parses the task header.

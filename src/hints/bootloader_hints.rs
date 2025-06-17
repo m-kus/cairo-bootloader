@@ -1046,7 +1046,6 @@ mod tests {
             Err(HintError::CustomHint(e)) => {
                 assert!(expect_fail);
                 assert_eq!(e.as_ref(), "program address is incorrect");
-                
             }
             _ => panic!("result not recognized"),
         }
