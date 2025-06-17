@@ -5,32 +5,21 @@ Cairo bootloader port for the Rust Cairo VM.
 The Cairo bootloader is a Cairo program that loads and executes other programs in a provable way.
 It is also able to execute Cairo PIEs (Position Independent Executables) along with regular Cairo programs.
 
-We currently support Cairo bootloader v0.13.0.
+We currently support Cairo bootloader v0.13.1.
 
-## How to use this library
+## Installation
 
-We provide two hint processors that can be used to execute bootloader hints.
+```sh
+cargo install --git https://github.com/m-kus/cairo-bootloader --rev 0861070b85cac2f4425cfed35fc2a401291bddd5 cairo-bootloader
+```
 
-### Standalone hint processor
+## Usage
 
-The standalone hint processor (`BootloaderHintProcessor`) is the simplest way to execute the bootloader. 
-You can just declare the hint processor and use it in `cairo_run_program`.
+Generate PIE using [`cairo-execute`](https://github.com/m-kus/cairo/pull/4) (note that Stwo is compatible with a specific cairo-vm commit).
 
-Check the [run program example](./examples/run_program.rs) for more details on how to configure the bootloader options.
+```sh
+stwo-bootloader --pie <path-to-the-pie> --output-path <output-dir>
+```
 
-### Minimal hint processor.
-
-For advanced use cases, we also provide the `MinimalBootloaderHintProcessor` struct.
-This is useful when you want to mix multiple hint processors (ex: Starknet OS hints + bootloader hints + builtin hints)
-and avoid checking for the Cairo VM hints multiple times, or simply avoid compatibility issues between different
-versions of `cairo-vm`.
-
-To use this hint processor, you will need to define your own hint processor structure and implement the `HintProcessorLogic`
-trait yourself.
-
-Note that this is exactly how the `BootloaderHintProcessor` struct is implemented.
-
-## Limitations
-
-* Composite packed outputs are not supported yet.
-* The bootloader is not able to load hints for Cairo 0 programs with hints yet.
+In the output directory you will find memory/trace binary files as well as public/private input JSON files.  
+Compatible with `adapted_stwo` prover binary.
