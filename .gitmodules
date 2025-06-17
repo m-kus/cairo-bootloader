@@ -1,6 +1,7 @@
 [submodule "dependencies/cairo-lang"]
 	path = dependencies/cairo-lang
-	url = https://github.com/starkware-libs/cairo-lang
+	url = https://github.com/starkware-libs/cairo-lang.git
+	branch = v0.13.5
 [submodule "test-programs"]
 	path = dependencies/test-programs
-	url = https://github.com/Moonsong-Labs/cairo-programs
+	url = https://github.com/Moonsong-Labs/cairo-programs.git

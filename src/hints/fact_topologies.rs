@@ -382,7 +382,7 @@ pub fn get_task_fact_topology(
     output_builtin: &mut OutputBuiltinRunner,
     output_runner_data: Option<OutputBuiltinState>,
 ) -> Result<FactTopology, FactTopologyError> {
-    if let Some(_) = task.as_any().downcast_ref::<RunProgramTask>() {
+    if task.as_any().downcast_ref::<RunProgramTask>().is_some() {
         let output_runner_data = output_runner_data.ok_or(FactTopologyError::Internal(
             "Output runner data not set for program task"
                 .to_string()
@@ -559,14 +559,14 @@ mod tests {
             offset: 10,
         };
 
-        let result = configure_fact_topologies(
+        configure_fact_topologies(
             &fact_topologies,
             &mut output_start,
             &mut output_builtin,
             true,
         )
         .expect("Configuring fact topologies failed unexpectedly");
-        assert_eq!(result, ());
+        assert_eq!((), ());
 
         let output_builtin_state = output_builtin.get_state();
         assert_eq!(output_builtin_state.base, 0);
@@ -588,7 +588,7 @@ mod tests {
             offset: 10,
         };
 
-        let result = configure_fact_topologies(
+        configure_fact_topologies(
             &fact_topologies,
             &mut output_start,
             &mut output_builtin,
@@ -596,7 +596,7 @@ mod tests {
         )
         .expect("Configuring fact topologies failed unexpectedly");
 
-        assert_eq!(result, ());
+        assert_eq!((), ());
 
         // We expect the offset to 2 + sum(page_sizes) for each fact topology
         let expected_offset: usize = fact_topologies.iter().flat_map(|ft| &ft.page_sizes).sum();

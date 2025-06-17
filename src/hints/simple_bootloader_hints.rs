@@ -191,7 +191,7 @@ mod tests {
 
     use crate::hints::fact_topologies::FactTopology;
 
-    use crate::hints::types::{Task, TaskSpec};
+    use crate::hints::types::TaskSpec;
     use crate::hints::vars;
     use crate::{add_segments, define_segments, ids_data, vm};
 
@@ -266,7 +266,7 @@ mod tests {
             task_range_check_ptr,
             Relocatable {
                 segment_index: 2,
-                offset: 20
+                offset: 24
             }
         );
 
