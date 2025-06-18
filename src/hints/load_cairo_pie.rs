@@ -180,23 +180,6 @@ pub fn build_cairo_pie_relocation_table(
     relocation_table.insert(cairo_pie.metadata.ret_fp_segment.index, ret_fp)?;
     relocation_table.insert(cairo_pie.metadata.ret_pc_segment.index, ret_pc)?;
 
-    println!(
-        "program segment index: {:?}",
-        cairo_pie.metadata.program_segment.index
-    );
-    println!(
-        "execution segment index: {:?}",
-        cairo_pie.metadata.execution_segment.index
-    );
-    println!(
-        "ret_fp segment index: {:?}",
-        cairo_pie.metadata.ret_fp_segment.index
-    );
-    println!(
-        "ret_pc segment index: {:?}",
-        cairo_pie.metadata.ret_pc_segment.index
-    );
-
     let origin_execution_segment = Relocatable {
         segment_index: cairo_pie.metadata.execution_segment.index,
         offset: 0,
@@ -213,7 +196,6 @@ pub fn build_cairo_pie_relocation_table(
         let segment_index = extract_segment(memory_map[&memory_address].clone())?;
         let relocation = vm.get_relocatable((execution_segment_address + idx)?)?;
         relocation_table.insert(segment_index, relocation)?;
-        println!("{} segment_index: {:?}", _builtin_name, segment_index);
     }
 
     for segment_info in cairo_pie.metadata.extra_segments.iter() {
@@ -279,14 +261,9 @@ fn relocate_cairo_pie_memory(
     // Relocate memory segment
     for ((segment_index, offset), value) in &cairo_pie.memory.0 {
         let address = Relocatable::from((*segment_index as isize, *offset));
-        println!("address: {:?}", address);
         let relocated_address = relocation_table.relocate_address(address)?;
-        println!("value: {:?}", value);
         let relocated_value = relocation_table.relocate_value(value.clone())?;
-        println!("relocated_address: {:?}", relocated_address);
-        println!("relocated_value: {:?}", relocated_value);
         vm.insert_value(relocated_address, relocated_value)?;
-        println!("--------------------------------");
     }
 
     Ok(())
