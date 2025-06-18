@@ -10,7 +10,7 @@ We currently support Cairo bootloader v0.13.1.
 ## Installation
 
 ```sh
-cargo install --git https://github.com/m-kus/cairo-bootloader --rev 0861070b85cac2f4425cfed35fc2a401291bddd5 cairo-bootloader
+cargo install --git https://github.com/m-kus/cairo-bootloader --rev 5aa40dc5f084c6406ae9d76b19a115e3a3832b97 cairo-bootloader
 ```
 
 ## Usage
