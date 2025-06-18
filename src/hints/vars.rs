@@ -31,6 +31,9 @@ pub const TASK: &str = "task";
 /// Program data segment. Used in `execute_task()`.
 pub const PROGRAM_DATA_BASE: &str = "program_data_base";
 
+/// Task range check segment.
+pub const TASK_RANGE_CHECK_PTR: &str = "task_range_check_ptr";
+
 /// Address of current program.
 pub const PROGRAM_ADDRESS: &str = "program_address";
 

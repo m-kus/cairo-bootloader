@@ -95,7 +95,7 @@ memory[ids.output_ptr] = n_tasks
 
 # Task range checks are located right after simple bootloader validation range checks, and
 # this is validated later in this function.
-ids.task_range_check_ptr = ids.range_check_ptr + ids.BuiltinData.SIZE * n_tasks
+ids.task_range_check_ptr = segments.add_temp_segment()
 
 # A list of fact_toplogies that instruct how to generate the fact from the program output
 # for each task.

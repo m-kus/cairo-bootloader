@@ -93,9 +93,6 @@ func execute_task{builtin_ptrs: BuiltinData*, self_range_check_ptr}(
     // Verify that the bootloader version is compatible with the bootloader.
     assert program_header.bootloader_version = BOOTLOADER_VERSION;
 
-    let pedersen_ptr = cast(input_builtin_ptrs.pedersen, HashBuiltin*);
-    let poseidon_ptr = cast(input_builtin_ptrs.poseidon, PoseidonBuiltin*);
-
     // Call hash_chain, to verify the program hash.
     with self_range_check_ptr {
         let (hash) = compute_program_hash(
@@ -105,6 +102,7 @@ func execute_task{builtin_ptrs: BuiltinData*, self_range_check_ptr}(
 
     // Write hash_chain result to output_ptr + 1.
     assert [output_ptr + 1] = hash;
+    // TODO: implement blake2s hash validation hint in Rust
     // %{
     //     # Validate hash.
     //     from starkware.cairo.bootloaders.hash_program import compute_program_hash_chain
@@ -130,13 +128,13 @@ func execute_task{builtin_ptrs: BuiltinData*, self_range_check_ptr}(
     // Skip the 2 slots prefix that we add to the task output.
     local pre_execution_builtin_ptrs: BuiltinData = BuiltinData(
         output=output_ptr + 2,
-        pedersen=cast(pedersen_ptr, felt),
+        pedersen=input_builtin_ptrs.pedersen,
         range_check=input_builtin_ptrs.range_check,
         ecdsa=input_builtin_ptrs.ecdsa,
         bitwise=input_builtin_ptrs.bitwise,
         ec_op=input_builtin_ptrs.ec_op,
         keccak=input_builtin_ptrs.keccak,
-        poseidon=cast(poseidon_ptr, felt),
+        poseidon=input_builtin_ptrs.poseidon,
         range_check96=input_builtin_ptrs.range_check96,
         add_mod=0,
         mul_mod=0,
