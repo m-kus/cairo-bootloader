@@ -5,6 +5,9 @@ from starkware.cairo.common.builtin_poseidon.poseidon import PoseidonBuiltin, po
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.hash_chain import hash_chain
 from starkware.cairo.common.registers import get_ap, get_fp_and_pc
+from bootloader.cairo_blake2s.blake2s import (
+    encode_felt252_data_and_calc_224_bit_blake_hash,
+)
 
 const BOOTLOADER_VERSION = 0;
 
@@ -44,18 +47,13 @@ struct BuiltinData {
 //  * use_poseidon - a flag that determines whether the hashing will use Poseidon hash.
 // Return values:
 //  * hash - the computed program hash.
-func compute_program_hash{pedersen_ptr: HashBuiltin*, poseidon_ptr: PoseidonBuiltin*}(
-    program_data_ptr: felt*, use_poseidon: felt
+func compute_program_hash{self_range_check_ptr: felt}(
+    program_data_ptr: felt*
 ) -> (hash: felt) {
-    if (use_poseidon == 0) {
-        let (hash) = poseidon_hash_many{poseidon_ptr=poseidon_ptr}(
-            n=program_data_ptr[0], elements=&program_data_ptr[1]
-        );
-        return (hash=hash);
-    } else {
-        let (hash) = hash_chain{hash_ptr=pedersen_ptr}(data_ptr=program_data_ptr);
-        return (hash=hash);
-    }
+    let (hash) = encode_felt252_data_and_calc_224_bit_blake_hash{
+        range_check_ptr=self_range_check_ptr
+    }(data_len=program_data_ptr[0], data=&program_data_ptr[1]);
+    return (hash=hash);
 }
 
 // Executes a single task.
@@ -95,12 +93,13 @@ func execute_task{builtin_ptrs: BuiltinData*, self_range_check_ptr}(
     // Verify that the bootloader version is compatible with the bootloader.
     assert program_header.bootloader_version = BOOTLOADER_VERSION;
 
-    // Call hash_chain, to verify the program hash.
     let pedersen_ptr = cast(input_builtin_ptrs.pedersen, HashBuiltin*);
     let poseidon_ptr = cast(input_builtin_ptrs.poseidon, PoseidonBuiltin*);
-    with pedersen_ptr, poseidon_ptr {
+
+    // Call hash_chain, to verify the program hash.
+    with self_range_check_ptr {
         let (hash) = compute_program_hash(
-            program_data_ptr=program_data_ptr, use_poseidon=use_poseidon
+            program_data_ptr=program_data_ptr
         );
     }
 
