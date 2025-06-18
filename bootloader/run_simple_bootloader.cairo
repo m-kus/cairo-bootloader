@@ -1,6 +1,7 @@
 from bootloader.execute_task import BuiltinData, execute_task
 from starkware.cairo.common.cairo_builtins import HashBuiltin, PoseidonBuiltin
 from starkware.cairo.common.registers import get_fp_and_pc
+from starkware.cairo.common.segments import relocate_segment
 
 // Loads the programs and executes them.
 //
@@ -30,7 +31,7 @@ func run_simple_bootloader{
 
         # Task range checks are located right after simple bootloader validation range checks, and
         # this is validated later in this function.
-        ids.task_range_check_ptr = ids.range_check_ptr + ids.BuiltinData.SIZE * n_tasks
+        ids.task_range_check_ptr = segments.add_temp_segment()
 
         # A list of fact_toplogies that instruct how to generate the fact from the program output
         # for each task.
@@ -98,8 +99,11 @@ func run_simple_bootloader{
         );
     }
 
-    // Verify that the task range checks appear after the self range checks of execute_task.
-    assert self_range_check_ptr = task_range_check_ptr;
+    // Relocate the range checks used by the subtasks after the range checks used by the bootloader.
+    relocate_segment(
+        src_ptr=cast(task_range_check_ptr, felt*),
+        dest_ptr=cast(self_range_check_ptr, felt*),
+    );
 
     // Return the updated builtin pointers.
     local builtin_ptrs: BuiltinData* = builtin_ptrs;

@@ -43,17 +43,28 @@ pub fn prepare_task_range_checks(
     let output_ptr = get_ptr_from_var_name("output_ptr", vm, ids_data, ap_tracking)?;
     vm.insert_value(output_ptr, Felt252::from(n_tasks))?;
 
-    // ids.task_range_check_ptr = ids.range_check_ptr + ids.BuiltinData.SIZE * n_tasks
-    const BUILTIN_DATA_SIZE: usize = ALL_BUILTINS.len();
-    let range_check_ptr = get_ptr_from_var_name("range_check_ptr", vm, ids_data, ap_tracking)?;
-    let task_range_check_ptr = (range_check_ptr + BUILTIN_DATA_SIZE * n_tasks)?;
+    // ids.task_range_check_ptr = segments.add_temp_segment()
+    let task_range_check_segment = vm.add_temporary_segment();
+    exec_scopes.insert_value(vars::TASK_RANGE_CHECK_PTR, task_range_check_segment);
     insert_value_from_var_name(
         "task_range_check_ptr",
-        task_range_check_ptr,
+        task_range_check_segment,
         vm,
         ids_data,
         ap_tracking,
     )?;
+
+    // ids.task_range_check_ptr = ids.range_check_ptr + ids.BuiltinData.SIZE * n_tasks
+    // const BUILTIN_DATA_SIZE: usize = ALL_BUILTINS.len();
+    // let range_check_ptr = get_ptr_from_var_name("range_check_ptr", vm, ids_data, ap_tracking)?;
+    // let task_range_check_ptr = (range_check_ptr + BUILTIN_DATA_SIZE * n_tasks)?;
+    // insert_value_from_var_name(
+    //     "task_range_check_ptr",
+    //     task_range_check_ptr,
+    //     vm,
+    //     ids_data,
+    //     ap_tracking,
+    // )?;
 
     // fact_topologies = []
     let fact_topologies = Vec::<FactTopology>::new();
@@ -261,12 +272,11 @@ mod tests {
             .unwrap();
         assert_eq!(output, simple_bootloader_input.tasks.len());
 
-        // Assert task_range_check_ptr == range_check_ptr (2, 2) + BUILTIN_DATA_SIZE (9) * n_tasks (2)
         assert_eq!(
             task_range_check_ptr,
             Relocatable {
-                segment_index: 2,
-                offset: 24
+                segment_index: -1, // temporary segment
+                offset: 0
             }
         );
 
