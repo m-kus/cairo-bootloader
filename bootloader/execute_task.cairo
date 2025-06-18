@@ -5,7 +5,7 @@ from starkware.cairo.common.builtin_poseidon.poseidon import PoseidonBuiltin, po
 from starkware.cairo.common.cairo_builtins import HashBuiltin
 from starkware.cairo.common.hash_chain import hash_chain
 from starkware.cairo.common.registers import get_ap, get_fp_and_pc
-from bootloader.cairo_blake2s.blake2s import (
+from starkware.cairo.common.cairo_blake2s.blake2s import (
     encode_felt252_data_and_calc_224_bit_blake_hash,
 )
 

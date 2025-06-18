@@ -261,10 +261,14 @@ fn relocate_cairo_pie_memory(
     // Relocate memory segment
     for ((segment_index, offset), value) in &cairo_pie.memory.0 {
         let address = Relocatable::from((*segment_index as isize, *offset));
+        println!("address: {:?}", address);
         let relocated_address = relocation_table.relocate_address(address)?;
+        println!("value: {:?}", value);
         let relocated_value = relocation_table.relocate_value(value.clone())?;
-
+        println!("relocated_address: {:?}", relocated_address);
+        println!("relocated_value: {:?}", relocated_value);
         vm.insert_value(relocated_address, relocated_value)?;
+        println!("--------------------------------");
     }
 
     Ok(())
